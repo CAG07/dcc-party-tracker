@@ -1,0 +1,12 @@
+# Sync logs and state files
+*.log
+fg-sync-state-*.txt
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~

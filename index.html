@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DCC Party Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --parchment-bg: #f4e4c1;
+            --parchment-dark: #e8d4a8;
+            --parchment-light: #faf3e3;
+            --ink-brown: #3d2914;
+            --ink-red: #8b1a1a;
+            --ink-gold: #8b6914;
+            --border-brown: #6b4423;
+            --shadow-brown: rgba(61, 41, 20, 0.3);
+            --damage-red: #a02020;
+            --healthy-green: #2d5a27;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Crimson Text', Georgia, serif;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E"),
+                linear-gradient(135deg, var(--parchment-bg) 0%, var(--parchment-dark) 50%, var(--parchment-bg) 100%);
+            background-blend-mode: overlay;
+            color: var(--ink-brown);
+            min-height: 100vh;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .app-container { max-width: 1400px; margin: 0 auto; padding: 15px; }
+        .app-header {
+            text-align: center; padding: 12px 15px; border: 3px double var(--border-brown);
+            background: linear-gradient(to bottom, var(--parchment-light), var(--parchment-bg));
+            margin-bottom: 12px; position: relative;
+        }
+        .header-decor { position: absolute; font-size: 20px; color: var(--ink-red); opacity: 0.6; }
+        .header-decor.left { left: 15px; top: 50%; transform: translateY(-50%); }
+        .header-decor.right { right: 15px; top: 50%; transform: translateY(-50%) scaleX(-1); }
+        .party-name-input {
+            font-family: 'Cinzel', serif; font-size: 2em; font-weight: 700; color: var(--ink-red);
+            background: transparent; border: none; border-bottom: 2px dashed var(--border-brown);
+            text-align: center; width: 60%; outline: none;
+        }
+        .header-buttons { position: absolute; top: 8px; right: 40px; display: flex; gap: 4px; }
+        .btn {
+            font-family: 'Cinzel', serif; font-size: 0.65em; padding: 4px 8px;
+            background: linear-gradient(to bottom, var(--parchment-light), var(--parchment-dark));
+            border: 1px solid var(--border-brown); color: var(--ink-brown); cursor: pointer;
+            text-transform: uppercase; letter-spacing: 0.03em;
+        }
+        .btn:hover { box-shadow: 1px 1px 3px var(--shadow-brown); }
+        .nav-tabs { display: flex; justify-content: center; gap: 3px; margin-bottom: 12px; flex-wrap: wrap; }
+        .nav-tab {
+            font-family: 'Cinzel', serif; font-size: 0.8em; padding: 6px 12px;
+            background: var(--parchment-dark); border: 2px solid var(--border-brown); border-bottom: none;
+            color: var(--ink-brown); cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .nav-tab:hover { background: var(--parchment-light); }
+        .nav-tab.active { background: var(--parchment-light); color: var(--ink-red); font-weight: 600; margin-bottom: -2px; }
+        .content-panel { display: none; border: 3px double var(--border-brown); background: var(--parchment-light); padding: 15px; min-height: 450px; }
+        .content-panel.active { display: block; }
+        .section-header {
+            font-family: 'Cinzel', serif; font-size: 1.2em; color: var(--ink-red);
+            border-bottom: 2px solid var(--border-brown); padding-bottom: 4px; margin-bottom: 12px;
+            text-transform: uppercase; letter-spacing: 0.08em;
+        }
+        .section-subheader { font-family: 'Cinzel', serif; font-size: 1em; color: var(--ink-brown); margin: 12px 0 8px 0; font-weight: 600; }
+        .party-layout { display: grid; grid-template-columns: 1fr 480px 1fr; gap: 15px; min-height: 450px; }
+        .party-column { display: flex; flex-direction: column; gap: 12px; }
+        .party-column.left { align-items: flex-end; }
+        .party-column.right { align-items: flex-start; }
+        .adventure-center { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .adventure-art-container {
+            width: 100%; height: 320px; border: 3px solid var(--border-brown);
+            background: var(--parchment-dark); display: flex; align-items: center;
+            justify-content: center; overflow: hidden; cursor: pointer;
+        }
+        .adventure-art-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .adventure-art-placeholder { color: var(--ink-brown); opacity: 0.5; text-align: center; padding: 20px; font-style: italic; }
+        .adventure-status-input {
+            font-family: 'Crimson Text', serif; font-size: 1em; font-style: italic; color: var(--ink-brown);
+            background: transparent; border: none; border-bottom: 1px dashed var(--border-brown);
+            text-align: center; width: 100%; padding: 4px; outline: none; word-wrap: break-word;
+        }
+        .party-status-panel {
+            width: 100%; border: 1px solid var(--border-brown); background: var(--parchment-bg);
+            padding: 8px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center;
+        }
+        .status-field { display: flex; flex-direction: column; gap: 2px; }
+        .status-field label { font-family: 'Cinzel', serif; font-size: 0.7em; color: var(--ink-brown); text-transform: uppercase; }
+        .status-field input { font-family: 'Crimson Text', serif; font-size: 0.9em; padding: 3px 5px; border: 1px solid var(--border-brown); background: var(--parchment-light); }
+        .moons-display { display: flex; gap: 12px; justify-content: center; }
+        .moon-icon { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 4px; }
+        .moon-icon:hover { background: var(--parchment-dark); }
+        .moon-symbol { font-size: 1.6em; line-height: 1; }
+        .moon-name { font-size: 0.6em; text-transform: uppercase; font-family: 'Cinzel', serif; }
+        .party-gold { font-family: 'Cinzel', serif; font-size: 0.9em; color: var(--ink-gold); text-align: center; }
+        .character-card { width: 130px; border: 2px solid var(--border-brown); background: var(--parchment-bg); cursor: pointer; transition: all 0.2s; position: relative; }
+        .character-card:hover { box-shadow: 3px 3px 8px var(--shadow-brown); transform: translateY(-2px); }
+        .character-card-actions { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; opacity: 0; transition: opacity 0.2s; }
+        .character-card:hover .character-card-actions { opacity: 1; }
+        .card-action-btn { width: 16px; height: 16px; font-size: 9px; border: 1px solid var(--border-brown); background: var(--parchment-light); color: var(--ink-brown); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+        .card-action-btn:hover { background: var(--parchment-dark); }
+        .card-action-btn.danger:hover { background: var(--ink-red); color: var(--parchment-light); }
+        .card-action-btn.grave:hover { background: var(--ink-brown); color: var(--parchment-light); }
+        .card-action-btn.inactive:hover { background: var(--ink-gold); color: var(--parchment-light); }
+        .character-portrait { width: 100%; height: 90px; background: var(--parchment-dark); display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid var(--border-brown); position: relative; }
+        .character-portrait img { width: 100%; height: 100%; object-fit: cover; }
+        .portrait-placeholder { font-size: 2em; color: var(--ink-brown); opacity: 0.3; }
+        .familiar-badge { position: absolute; bottom: 2px; right: 2px; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border-brown); background: var(--parchment-bg); overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .familiar-badge img { width: 100%; height: 100%; object-fit: cover; }
+        .familiar-badge:hover { transform: scale(1.1); }
+        .character-info { padding: 5px; text-align: center; }
+        .character-name { font-family: 'Cinzel', serif; font-size: 0.8em; font-weight: 600; color: var(--ink-brown); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .character-name.long-name { font-size: 0.7em; }
+        .character-name.very-long-name { font-size: 0.6em; }
+        .character-class { font-size: 0.75em; color: var(--ink-brown); opacity: 0.8; }
+        .character-hp { font-size: 0.8em; margin-top: 2px; }
+        .character-hp.healthy { color: var(--healthy-green); }
+        .character-hp.wounded { color: var(--ink-gold); }
+        .character-hp.critical { color: var(--damage-red); }
+        .hp-pips { margin-top: 2px; font-size: 0.7em; letter-spacing: 2px; }
+        .add-character-card { width: 130px; height: 145px; border: 2px dashed var(--border-brown); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; opacity: 0.5; }
+        .add-character-card:hover { opacity: 1; background: var(--parchment-bg); }
+        .add-character-card .plus { font-size: 2em; color: var(--border-brown); }
+        .add-character-card span { font-family: 'Cinzel', serif; font-size: 0.65em; color: var(--border-brown); margin-top: 5px; }
+        .inactive-character-card { opacity: 0.7; filter: grayscale(30%); }
+        .inactive-character-card:hover { opacity: 1; filter: none; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; justify-content: center; align-items: center; padding: 15px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--parchment-light); border: 4px double var(--border-brown); max-width: 850px; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { background: linear-gradient(to bottom, var(--parchment-bg), var(--parchment-dark)); border-bottom: 2px solid var(--border-brown); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .modal-title { font-family: 'Cinzel', serif; font-size: 1.5em; color: var(--ink-red); }
+        .modal-close { font-size: 1.2em; cursor: pointer; color: var(--ink-brown); padding: 3px 8px; border: 1px solid var(--border-brown); background: var(--parchment-light); }
+        .modal-close:hover { background: var(--parchment-dark); }
+        .modal-body { padding: 15px; }
+        .familiar-modal .modal-content { max-width: 450px; }
+        .char-sheet-header { display: grid; grid-template-columns: 110px 1fr; gap: 15px; margin-bottom: 15px; padding-bottom: 12px; border-bottom: 2px solid var(--border-brown); }
+        .char-sheet-portrait { width: 110px; height: 140px; border: 2px solid var(--border-brown); background: var(--parchment-dark); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; }
+        .char-sheet-portrait img { width: 100%; height: 100%; object-fit: cover; }
+        .char-sheet-basics { display: flex; flex-direction: column; justify-content: space-between; }
+        .char-sheet-basics .stat-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .stat-label { font-family: 'Cinzel', serif; font-size: 0.75em; color: var(--ink-brown); opacity: 0.8; text-transform: uppercase; }
+        .stat-value { font-weight: 600; color: var(--ink-brown); }
+        .stat-value.damage { color: var(--damage-red); }
+        .char-tabs { display: flex; gap: 3px; margin-bottom: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--border-brown); padding-bottom: 8px; }
+        .char-tab { font-family: 'Cinzel', serif; font-size: 0.75em; padding: 5px 10px; background: var(--parchment-dark); border: 1px solid var(--border-brown); cursor: pointer; text-transform: uppercase; }
+        .char-tab.active { background: var(--parchment-light); color: var(--ink-red); font-weight: 600; }
+        .char-tab-content { display: none; }
+        .char-tab-content.active { display: block; }
+        .abilities-table, .equipment-table, .spells-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        .abilities-table th, .abilities-table td, .equipment-table th, .equipment-table td, .spells-table th, .spells-table td { padding: 5px 6px; text-align: left; border-bottom: 1px solid var(--border-brown); }
+        .abilities-table th, .equipment-table th, .spells-table th { font-family: 'Cinzel', serif; font-size: 0.75em; text-transform: uppercase; background: var(--parchment-dark); }
+        .abilities-table td:first-child { font-weight: 600; }
+        .abilities-table .damaged { color: var(--damage-red); font-weight: 600; }
+        .equipment-table .notch { font-family: monospace; letter-spacing: 2px; }
+        .equipment-table .item-desc { font-size: 0.8em; color: var(--ink-brown); opacity: 0.8; font-style: italic; }
+        .spells-table .spell-name { cursor: pointer; color: var(--ink-red); text-decoration: underline; }
+        .spells-table .spell-name:hover { color: var(--ink-brown); }
+        .spell-prepared { color: var(--healthy-green); }
+        .spell-not-prepared { opacity: 0.5; }
+        .casting-table { width: 100%; border-collapse: collapse; font-size: 0.85em; margin-top: 8px; }
+        .casting-table th, .casting-table td { padding: 4px 5px; border: 1px solid var(--border-brown); vertical-align: top; }
+        .casting-table th { background: var(--parchment-dark); font-family: 'Cinzel', serif; font-size: 0.7em; }
+        .casting-table td:first-child { width: 60px; text-align: center; font-weight: 600; }
+        .spell-detail { background: var(--parchment-bg); border: 2px solid var(--border-brown); padding: 12px; margin-top: 8px; }
+        .spell-detail h4 { font-family: 'Cinzel', serif; color: var(--ink-red); margin-bottom: 8px; }
+        .features-list { list-style: none; }
+        .features-list li { padding: 8px; border-bottom: 1px solid var(--border-brown); }
+        .features-list .feature-name { font-family: 'Cinzel', serif; font-weight: 600; color: var(--ink-red); margin-bottom: 4px; }
+        .features-list .feature-text { font-size: 0.9em; line-height: 1.5; }
+        .notes-textarea, .assets-textarea { width: 100%; min-height: 80px; font-family: 'Crimson Text', serif; font-size: 0.95em; padding: 8px; border: 1px solid var(--border-brown); background: var(--parchment-bg); color: var(--ink-brown); resize: vertical; }
+        .assets-section { margin-bottom: 18px; }
+        .quest-list { list-style: none; }
+        .quest-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px; border-bottom: 1px solid var(--border-brown); }
+        .quest-item input[type="checkbox"] { margin-top: 4px; }
+        .quest-item .quest-text { flex: 1; font-family: 'Crimson Text', serif; font-size: 0.95em; border: none; background: transparent; color: var(--ink-brown); width: 100%; }
+        .quest-item.completed .quest-text { text-decoration: line-through; opacity: 0.6; }
+        .quest-item .delete-quest { color: var(--ink-red); cursor: pointer; opacity: 0.5; }
+        .quest-item .delete-quest:hover { opacity: 1; }
+        .journal-section { margin-bottom: 20px; }
+        .journal-shared { background: var(--parchment-bg); border: 2px solid var(--border-brown); padding: 12px; }
+        .journal-entry { margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px dashed var(--border-brown); }
+        .journal-entry:last-child { border-bottom: none; }
+        .journal-entry-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .journal-entry-date { font-family: 'Cinzel', serif; font-size: 0.8em; color: var(--ink-red); background: transparent; border: none; border-bottom: 1px dashed var(--border-brown); }
+        .journal-entry-content { width: 100%; min-height: 60px; font-family: 'Crimson Text', serif; font-size: 0.95em; padding: 8px; border: 1px solid var(--border-brown); background: var(--parchment-light); resize: vertical; }
+        .player-notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        .player-note-card { border: 1px solid var(--border-brown); background: var(--parchment-bg); padding: 8px; }
+        .player-note-card h4 { font-family: 'Cinzel', serif; font-size: 0.85em; color: var(--ink-red); margin-bottom: 6px; }
+        .player-note-card textarea { width: 100%; min-height: 70px; font-family: 'Crimson Text', serif; font-size: 0.85em; padding: 6px; border: 1px solid var(--border-brown); background: var(--parchment-light); resize: vertical; }
+        .graveyard-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+        .gravestone { border: 2px solid var(--border-brown); background: linear-gradient(to bottom, var(--parchment-dark), var(--parchment-bg)); padding: 12px; text-align: center; position: relative; }
+        .gravestone::before { content: "†"; font-size: 1.5em; color: var(--ink-brown); opacity: 0.3; position: absolute; top: 5px; right: 8px; }
+        .gravestone .dead-name { font-family: 'Cinzel', serif; font-size: 0.95em; font-weight: 600; margin-bottom: 4px; }
+        .gravestone .dead-class { font-size: 0.8em; margin-bottom: 4px; }
+        .gravestone .dead-cause { font-style: italic; font-size: 0.75em; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-brown); }
+        .gravestone .delete-grave { position: absolute; top: 4px; left: 4px; color: var(--ink-red); cursor: pointer; opacity: 0.3; font-size: 0.75em; }
+        .gravestone .delete-grave:hover { opacity: 1; }
+        .add-grave-form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 15px; padding: 12px; background: var(--parchment-dark); border: 1px solid var(--border-brown); }
+        .add-grave-form input { font-family: 'Crimson Text', serif; padding: 6px; border: 1px solid var(--border-brown); background: var(--parchment-light); }
+        .wiki-tabs { display: flex; gap: 4px; margin-bottom: 12px; border-bottom: 2px solid var(--border-brown); padding-bottom: 8px; }
+        .wiki-tab { font-family: 'Cinzel', serif; font-size: 0.8em; padding: 6px 12px; background: var(--parchment-dark); border: 1px solid var(--border-brown); cursor: pointer; text-transform: uppercase; }
+        .wiki-tab.active { background: var(--parchment-light); color: var(--ink-red); font-weight: 600; }
+        .wiki-tab-content { display: none; }
+        .wiki-tab-content.active { display: block; }
+        .wiki-class-list { list-style: none; }
+        .wiki-class-item { border: 1px solid var(--border-brown); margin-bottom: 8px; background: var(--parchment-bg); }
+        .wiki-class-header { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-family: 'Cinzel', serif; font-weight: 600; color: var(--ink-red); }
+        .wiki-class-header:hover { background: var(--parchment-dark); }
+        .wiki-class-header .draft-badge { font-size: 0.65em; color: var(--ink-gold); background: var(--parchment-dark); padding: 2px 5px; border: 1px solid var(--ink-gold); }
+        .wiki-class-content { display: none; padding: 12px; border-top: 1px solid var(--border-brown); font-size: 0.9em; line-height: 1.5; }
+        .wiki-class-content.active { display: block; }
+        .equipment-category { margin-bottom: 15px; }
+        .equipment-category h4 { font-family: 'Cinzel', serif; color: var(--ink-red); margin-bottom: 8px; border-bottom: 1px solid var(--border-brown); padding-bottom: 4px; }
+        .currency-display { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
+        .currency-item { font-family: 'Cinzel', serif; font-size: 0.85em; }
+        .currency-item .amount { font-weight: 600; }
+        .class-tracking { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 12px; }
+        .tracking-item { display: flex; flex-direction: column; gap: 4px; }
+        .tracking-item label { font-family: 'Cinzel', serif; font-size: 0.75em; color: var(--ink-brown); }
+        .tracking-item input, .tracking-item textarea { font-family: 'Crimson Text', serif; padding: 4px 6px; border: 1px solid var(--border-brown); background: var(--parchment-bg); width: 100%; }
+        .hidden-input { display: none; }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: var(--parchment-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border-brown); border: 2px solid var(--parchment-dark); }
+        @media (max-width: 900px) { .party-layout { grid-template-columns: 1fr; } .party-column { flex-direction: row; flex-wrap: wrap; justify-content: center; } .adventure-center { order: -1; } }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <span class="header-decor left">☙</span>
+            <span class="header-decor right">☙</span>
+            <input type="text" class="party-name-input" id="partyName" value="The Adventuring Company" onchange="saveData()">
+            <div class="header-buttons">
+                <button class="btn" onclick="importXML()">XML</button>
+                <button class="btn" onclick="exportData()">Save</button>
+                <button class="btn" onclick="importData()">Load</button>
+            </div>
+        </header>
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="party">Party</button>
+            <button class="nav-tab" data-tab="companions">Companions</button>
+            <button class="nav-tab" data-tab="inactive">Inactive</button>
+            <button class="nav-tab" data-tab="assets">Assets</button>
+            <button class="nav-tab" data-tab="quests">Quests</button>
+            <button class="nav-tab" data-tab="journal">Journal</button>
+            <button class="nav-tab" data-tab="wiki">Wiki</button>
+            <button class="nav-tab" data-tab="graveyard">Graveyard</button>
+        </nav>
+        <div class="content-panel active" id="panel-party">
+            <div class="party-layout">
+                <div class="party-column left" id="partyColumnLeft"></div>
+                <div class="adventure-center">
+                    <div class="adventure-art-container" onclick="uploadAdventureArt()">
+                        <div class="adventure-art-placeholder" id="adventureArtPlaceholder">Click to add Adventure Art</div>
+                        <img id="adventureArtImage" style="display:none;">
+                    </div>
+                    <input type="text" class="adventure-status-input" id="adventureStatus" placeholder="Current adventure or location..." onchange="saveData()">
+                    <div class="party-status-panel">
+                        <div class="status-field">
+                            <label>Adventure Date</label>
+                            <input type="text" id="adventureDate" placeholder="MM/DD/YY" onchange="saveData()">
+                        </div>
+                        <div class="moons-display">
+                            <div class="moon-icon" onclick="cycleMoon('silver')" title="Click to change phase">
+                                <span class="moon-symbol" id="silverMoonSymbol">&#127765;</span>
+                                <span class="moon-name">Shul</span>
+                            </div>
+                            <div class="moon-icon" onclick="cycleMoon('weird')" title="Click to change phase">
+                                <span class="moon-symbol" id="weirdMoonSymbol">&#127761;</span>
+                                <span class="moon-name">Weird</span>
+                            </div>
+                        </div>
+                        <div class="status-field">
+                            <label>Location</label>
+                            <input type="text" id="adventureLocation" placeholder="Location..." onchange="saveData()">
+                        </div>
+                    </div>
+                    <div class="party-gold">Party Treasury: <span id="partyGoldTotal">0</span> gp</div>
+                </div>
+                <div class="party-column right" id="partyColumnRight"></div>
+            </div>
+        </div>
+        <div class="content-panel" id="panel-companions">
+            <h3 class="section-header">Pets, Familiars & Companions</h3>
+            <div id="companionsList" class="graveyard-list"></div>
+            <div class="add-grave-form" style="grid-template-columns: repeat(3, 1fr);">
+                <input type="text" id="companionNameInput" placeholder="Name">
+                <input type="text" id="companionTypeInput" placeholder="Type">
+                <input type="text" id="companionOwnerInput" placeholder="Owner">
+                <button class="btn" onclick="addCompanion()" style="grid-column: span 3;">+ Add Companion</button>
+            </div>
+        </div>
+        <div class="content-panel" id="panel-inactive">
+            <h3 class="section-header">Inactive Characters</h3>
+            <p style="font-style: italic; margin-bottom: 12px;">Characters resting between adventures.</p>
+            <div id="inactiveList" class="graveyard-list"></div>
+        </div>
+        <div class="content-panel" id="panel-assets">
+            <div class="assets-section"><h3 class="section-header">Hirelings & Retainers</h3><textarea class="assets-textarea" id="assetsHirelings" onchange="saveData()"></textarea></div>
+            <div class="assets-section"><h3 class="section-header">Vehicles & Mounts</h3><textarea class="assets-textarea" id="assetsVehicles" onchange="saveData()"></textarea></div>
+            <div class="assets-section"><h3 class="section-header">Property & Holdings</h3><textarea class="assets-textarea" id="assetsProperty" onchange="saveData()"></textarea></div>
+            <div class="assets-section"><h3 class="section-header">Shared Treasure</h3><textarea class="assets-textarea" id="assetsTreasure" onchange="saveData()"></textarea></div>
+        </div>
+        <div class="content-panel" id="panel-quests">
+            <div class="assets-section"><h3 class="section-header">Active Quests</h3><ul class="quest-list" id="activeQuests"></ul><button class="btn" onclick="addQuest('active')">+ Add Quest</button></div>
+            <div class="assets-section"><h3 class="section-header">Accomplishments</h3><ul class="quest-list" id="accomplishments"></ul><button class="btn" onclick="addQuest('accomplished')">+ Add</button></div>
+            <div class="assets-section"><h3 class="section-header">Rumors & Leads</h3><ul class="quest-list" id="rumors"></ul><button class="btn" onclick="addQuest('rumors')">+ Add Rumor</button></div>
+        </div>
+        <div class="content-panel" id="panel-journal">
+            <div class="journal-section"><h3 class="section-header">Shared Party Journal</h3><div class="journal-shared" id="sharedJournal"></div><button class="btn" style="margin-top:8px;" onclick="addJournalEntry()">+ Add Entry</button></div>
+            <div class="journal-section"><h3 class="section-header">Player Notes</h3><div class="player-notes-grid" id="playerNotes"></div></div>
+        </div>
+        <div class="content-panel" id="panel-wiki">
+            <div class="wiki-tabs">
+                <button class="wiki-tab active" onclick="switchWikiTab(this,'classes')">Classes</button>
+                <button class="wiki-tab" onclick="switchWikiTab(this,'equipment')">Equipment</button>
+                <button class="wiki-tab" onclick="switchWikiTab(this,'houserules')">House Rules</button>
+            </div>
+            <div class="wiki-tab-content active" id="wikiTab-classes"><ul class="wiki-class-list" id="wikiClassList"></ul></div>
+            <div class="wiki-tab-content" id="wikiTab-equipment"><div id="wikiEquipmentContent"></div></div>
+            <div class="wiki-tab-content" id="wikiTab-houserules"><h4 class="section-subheader">House Rules</h4><textarea class="assets-textarea" id="houseRulesText" style="min-height:350px;" onchange="saveData()"></textarea></div>
+        </div>
+        <div class="content-panel" id="panel-graveyard">
+            <h3 class="section-header">In Memoriam</h3>
+            <div class="graveyard-list" id="graveyardList"></div>
+            <div class="add-grave-form">
+                <input type="text" id="graveNameInput" placeholder="Name">
+                <input type="text" id="graveClassInput" placeholder="Class">
+                <input type="text" id="graveLevelInput" placeholder="Level">
+                <input type="text" id="graveCauseInput" placeholder="Cause of Death">
+                <button class="btn" onclick="addGravestone()" style="grid-column: span 4;">+ Add to Graveyard</button>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="characterModal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="modalCharName">Character</h2><button class="modal-close" onclick="closeCharacterModal()">X</button></div><div class="modal-body" id="modalBody"></div></div></div>
+    <div class="modal-overlay familiar-modal" id="familiarModal"><div class="modal-content"><div class="modal-header"><h2 class="modal-title" id="familiarModalName">Familiar</h2><button class="modal-close" onclick="closeFamiliarModal()">X</button></div><div class="modal-body" id="familiarModalBody"></div></div></div>
+    <input type="file" class="hidden-input" id="xmlFileInput" accept=".xml" multiple onchange="handleXMLImport(event)">
+    <input type="file" class="hidden-input" id="jsonFileInput" accept=".json" onchange="handleJSONImport(event)">
+    <input type="file" class="hidden-input" id="adventureArtInput" accept="image/*" onchange="handleAdventureArtUpload(event)">
+    <input type="file" class="hidden-input" id="portraitInput" accept="image/*" onchange="handlePortraitUpload(event)">
+    <input type="file" class="hidden-input" id="familiarPortraitInput" accept="image/*" onchange="handleFamiliarPortraitUpload(event)">
+<script>
+let partyData = {partyName:"The Adventuring Company",adventureStatus:"",adventureArt:null,adventureDate:"",adventureLocation:"",silverMoonPhase:0,weirdMoonPhase:0,characters:[],inactiveCharacters:[],companions:[],characterOrder:{left:[],right:[]},assets:{hirelings:"",vehicles:"",property:"",treasure:""},quests:{active:[],accomplished:[],rumors:[]},journal:[],playerNotes:{},graveyard:[],houseRules:""};
+let currentPortraitCharId=null,currentFamiliarCharId=null;
+const MOON_PHASES=['🌑','🌒','🌓','🌔','🌕','🌖','🌗','🌘'];
+const MOON_NAMES=['New','Waxing Crescent','First Quarter','Waxing Gibbous','Full','Waning Gibbous','Last Quarter','Waning Crescent'];
+
+const CLASS_DATA={
+warrior:{name:"Warrior",draft:false,description:"Hit Points: 1d12 per level\nWeapons: All weapons | Armor: All armor\n\nKey Abilities:\n- Deed Die: Rolled each attack, adds to BOTH attack and damage. Scales d3 to d10+4.\n- Mighty Deed of Arms: If Deed Die shows 3+, perform combat maneuver AND deal damage.\n- Shatter Shield / Sunder Helm: Special Mighty Deed options.\n- Critical Hits: Expanded threat range (19-20 to 17-20).\n\nLuck: Applies to critical hit rolls."},
+cleric:{name:"Cleric",draft:false,description:"Hit Points: 1d8 per level\nWeapons: Deity-specific | Armor: All armor\n\nKey Abilities:\n- Divine Magic: Spell check = 1d20 + Personality mod + Caster Level\n- Turn Unholy: Drive away creatures opposed to deity\n- Lay on Hands: Heal the faithful\n- Disapproval: Failed checks increase disapproval range\n\nLuck: Applies to Turn Unholy checks."},
+thief:{name:"Thief",draft:false,description:"Hit Points: 1d6 per level\nWeapons: Blackjack, blowgun, crossbow, dagger, dart, garrote, longsword, short sword, sling, staff | Armor: Leather\n\nKey Abilities:\n- Backstab: Automatic critical hit against unaware targets\n- Thief Skills: Varies by alignment (Burglar/Assassin/Swindler)\n- Luck Die: Roll per point of Luck spent\n- Luck Recovery: Recover Luck = Level per night\n- Bonus Occupation: +1 occupation at Level 1\n\nLuck: Applies to thief skill checks."},
+wizard:{name:"Wizard",draft:false,description:"Hit Points: 1d4 per level\nWeapons: Dagger, longbow, longsword, shortbow, short sword, staff | Armor: None\n\nKey Abilities:\n- Arcane Magic: Spell check = 1d20 + Intelligence mod + Caster Level\n- Spellburn: Sacrifice Str/Agi/Sta to boost spell checks\n- Corruption: Failed checks may cause corruption\n- Mercurial Magic: Each spell has unique side effects\n- Supernatural Patrons: Bind to otherworldly entities\n- Scribe Spell: Spell check to copy spells (1d10 x 1d10 x spell level gp)\n\nLuck: Applies to corruption and mercurial magic."},
+bard:{name:"Bard",draft:false,description:"Hit Points: 1d6 per level\nWeapons: One-handed weapons, shortbow | Armor: Light armor\n\nKey Abilities:\n- Resonance Die: Add to rolls when influencing existing magic (d3 to d16)\n- Bardic Influence: Affect spells and enchantments through performance\n- Primal Effect: Powerful effects but risk Dissonance\n- Lore: Knowledge of legends and magical secrets\n- Fascinate: Captivate listeners\n\nLuck: Applies to Resonance checks."},
+munk:{name:"Munk",draft:false,description:"Hit Points: 1d6 per level\nWeapons: Blowgun, dagger, dart, sling, shortbow, staff, longsword, 2H sword, garrote, spear, polearm | Armor: None (uses Unarmored AC)\n\nKey Abilities:\n- Unarmored AC Bonus: +2 (L1) to +5 (L10)\n- Open Hand Attack: 1d3 + Str lethal unarmed\n- Death Touch: Burn Personality for enhanced crits\n- Way of Hydra: Two-weapon fighting 1d16/1d16\n- Way of the Orm: Expanded critical range\n- Dream Shapings: Spend Lucidity for effects\n\nTracking: Lucidity, Shaping Die"},
+psion:{name:"Psion",draft:false,description:"Hit Points: 1d7 per level\nWeapons: Club, staff, dagger, mace, slingshot, crossbow, pistol | Armor: Any\n\nKey Abilities:\n- Psionic Power Check: 1d20 + Int mod + CL + Focus Die\n- Focus Gems: Provide Focus Die (d2 to d30). Natural 1 = gem destroyed\n- Psionic Backlash: Natural 1 = roll Backlash Table\n- Shadow Cloak: Hide in nearly any terrain\n\nTracking: Focus Die, Focus Gem"},
+ranger:{name:"Ranger",draft:false,description:"Hit Points: 1d8 per level\nWeapons: All weapons | Armor: Medium or lighter\n\nPaths:\n- Doomstalker (Lawful): Trophy hunter, favored enemies\n- Beastmaster (Neutral): Animal companion, beast speech\n- Skinwalker (Chaotic): Spirit channeling, shapeshift\n\nKey Abilities:\n- Wilderness Survival: Expert outdoor skills\n- Favored Terrain: Bonuses in chosen environment\n- Path Abilities: Varies by alignment"},
+foundling:{name:"Foundling",draft:false,description:"Hit Points: 1d6 per level\nWeapons: Varies by heritage | Armor: Light\n\nKey Abilities:\n- Otherworldly Heritage: Determines starting abilities and vulnerabilities\n- Blood Gifts: Unique powers from otherworldly parent\n- Patron Bond: Automatically bound to heritage patron\n- Taint: Risk of corruption from heritage\n\nLuck: Applies to Will saves vs Taint."},
+woolly_neanderthal:{name:"Woolly Neanderthal",draft:false,description:"Hit Points: 2d8 at 1st level, 1d8 thereafter\nWeapons: Stone Age weapons | Armor: Hide and natural\n\nKey Abilities:\n- Perfect Hair Die: Roll for various benefits\n- Wilderness Skills: Expert survivalist in cold\n- Stone Age Combat: Proficient with primitive weapons\n- Chewbacca Bond: Intense loyalty to single human\n- Fur Pelt: Natural armor and cold resistance"},
+bishop_fish:{name:"Bishop Fish",draft:false,description:"Hit Points: 1d6 per level\nWeapons: Trident, net, dagger, crossbow | Armor: None (base AC 14)\n\nKey Abilities:\n- Tidal Die: Add to any roll. Depletes -1d per use (min d2). Starts d4, scales to d20.\n- Water Affinity: Heal when submerged\n- Land Weakness: Abilities degrade on land\n- Transfer Vitality: Unique healing\n- Disguise Self: Can appear human\n\nTracking: Tidal Die (current size)\nStamina Burn: Restore Tidal Die (max = level starting die)"},
+stoneborn_dwarf:{name:"Stoneborn Dwarf",draft:false,description:"Hit Points: 1d10 per level\nWeapons: All weapons | Armor: All armor\n\nKey Abilities:\n- Petrification Track: 0-10 scale. Higher = more AC/Fort but penalties\n- Gold-Scent: Smell treasure\n- Earth Sense: Detect stone, tremors, underground\n- Pixie Shard: Spirit companion\n- Moss Growth: Cultivate useful mosses\n- Runic Alphabets: Learn rune magic as petrification increases\n- Carousing: Spend gold to reduce petrification\n\nTracking: Petrification (0-10)\nAt 10: DC 15 Will save weekly or turn to stone."},
+witch:{name:"Witch",draft:true,description:"[DRAFT - IN DEVELOPMENT]\n\nHit Points: 1d6 per level\nWeapons: Dagger, staff, sickle | Armor: None\n\nKey Abilities:\n- Three Dice System: Roll 3d3 (scales to 3d8), assign to Strength, Cost, Pact\n- Ritual Strength: Die + Stipulations met determines spell power\n- Ritual Cost: Die + Time invested determines cost (hp, ability damage, corruption)\n- Dark Pact: Die + Court + Moon Phase determines bargain terms\n- Stipulations: Folkloric requirements that boost ritual dice\n- Hags Familiar: Detachable body part serves as familiar\n- Four Courts: Green Depths, Cold Barrows, Cthonic Pits, Deep Void\n\nSpecial: Triples = Perfect ritual. Straights = Old Gods pleased."}
+};
+
+const EQUIPMENT_DATA={
+weapons:[{name:"Club",cost:"3 gp",damage:"1d4",notes:""},{name:"Dagger",cost:"3 gp",damage:"1d4/1d10",notes:"Backstab, thrown"},{name:"Handaxe",cost:"4 gp",damage:"1d6",notes:"Thrown"},{name:"Javelin",cost:"1 gp",damage:"1d6",notes:"Thrown 30/60/90"},{name:"Longsword",cost:"10 gp",damage:"1d8",notes:""},{name:"Mace",cost:"5 gp",damage:"1d6",notes:""},{name:"Short sword",cost:"7 gp",damage:"1d6",notes:""},{name:"Spear",cost:"3 gp",damage:"1d8",notes:"2x dmg mounted"},{name:"Staff",cost:"5 sp",damage:"1d4",notes:""},{name:"Two-handed sword",cost:"15 gp",damage:"1d10",notes:"2H, -1d init"},{name:"Warhammer",cost:"5 gp",damage:"1d8",notes:""},{name:"Battleaxe",cost:"7 gp",damage:"1d10",notes:"2H"},{name:"Flail",cost:"6 gp",damage:"1d6",notes:""},{name:"Polearm",cost:"7 gp",damage:"1d10",notes:"2H"},{name:"Shortbow",cost:"25 gp",damage:"1d6",notes:"2H, 50/100/150"},{name:"Longbow",cost:"40 gp",damage:"1d6",notes:"2H, 70/140/210"},{name:"Crossbow",cost:"30 gp",damage:"1d6",notes:"2H, 80/160/240"},{name:"Sling",cost:"2 gp",damage:"1d4",notes:"40/80/160"}],
+armor:[{name:"Unarmored",cost:"-",ac:"10",penalty:"-",fumble:"-",speed:"-"},{name:"Padded",cost:"5 gp",ac:"+1",penalty:"0",fumble:"d8",speed:"-"},{name:"Leather",cost:"20 gp",ac:"+2",penalty:"0",fumble:"d8",speed:"-"},{name:"Studded",cost:"45 gp",ac:"+3",penalty:"-1",fumble:"d8",speed:"-"},{name:"Scale",cost:"80 gp",ac:"+4",penalty:"-2",fumble:"d12",speed:"-5'"},{name:"Chainmail",cost:"150 gp",ac:"+5",penalty:"-2",fumble:"d12",speed:"-5'"},{name:"Banded",cost:"250 gp",ac:"+6",penalty:"-4",fumble:"d16",speed:"-5'"},{name:"Half-plate",cost:"550 gp",ac:"+7",penalty:"-5",fumble:"d16",speed:"-10'"},{name:"Full plate",cost:"1200 gp",ac:"+8",penalty:"-6",fumble:"d16",speed:"-10'"},{name:"Shield",cost:"10 gp",ac:"+1",penalty:"-1",fumble:"d8",speed:"-"}],
+gear:[{name:"Backpack",cost:"2 gp",notes:"Holds 12 slots"},{name:"Bedroll",cost:"5 sp",notes:""},{name:"Candle",cost:"1 cp",notes:"1 hr light"},{name:"Crowbar",cost:"2 gp",notes:""},{name:"Flint & steel",cost:"15 cp",notes:""},{name:"Grappling hook",cost:"1 gp",notes:""},{name:"Holy symbol",cost:"25 gp",notes:"Silver"},{name:"Holy water",cost:"25 gp",notes:"1d4 vs undead"},{name:"Iron spikes",cost:"1 sp",notes:"Each"},{name:"Lantern",cost:"10 gp",notes:"6 hrs/flask"},{name:"Mirror",cost:"10 gp",notes:""},{name:"Oil flask",cost:"2 sp",notes:"1d6 fire"},{name:"Pole, 10'",cost:"2 sp",notes:""},{name:"Rations/day",cost:"5 cp",notes:""},{name:"Rope, 50'",cost:"3 gp",notes:""},{name:"Sack",cost:"12 cp",notes:""},{name:"Thieves' tools",cost:"25 gp",notes:""},{name:"Torch",cost:"1 cp",notes:"1 hr light"},{name:"Waterskin",cost:"5 sp",notes:""}],
+services:[{name:"Ale (pint)",cost:"1 cp",notes:""},{name:"Wine (pint)",cost:"1 sp",notes:""},{name:"Meal (common)",cost:"1 sp",notes:""},{name:"Meal (good)",cost:"5 sp",notes:""},{name:"Lodging (poor)",cost:"5 cp",notes:"/night"},{name:"Lodging (common)",cost:"2 sp",notes:"/night"},{name:"Lodging (good)",cost:"1 gp",notes:"/night"},{name:"Hireling (unskilled)",cost:"1 sp",notes:"/day"},{name:"Hireling (skilled)",cost:"3 sp",notes:"/day"}]
+};
+
+document.addEventListener('DOMContentLoaded',async function(){await loadData();setupTabNavigation();renderAll();});
+function setupTabNavigation(){document.querySelectorAll('.nav-tab').forEach(tab=>{tab.addEventListener('click',function(){const tabId=this.dataset.tab;document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.content-panel').forEach(p=>p.classList.remove('active'));this.classList.add('active');document.getElementById('panel-'+tabId).classList.add('active');});});}
+function renderAll(){renderParty();renderInactive();renderCompanions();renderQuests();renderJournal();renderGraveyard();renderWiki();updatePartyGold();updateMoonDisplays();}
+let kvSaveTimeout=null;
+function saveData(){partyData.partyName=document.getElementById('partyName').value;partyData.adventureStatus=document.getElementById('adventureStatus').value;partyData.adventureDate=document.getElementById('adventureDate').value;partyData.adventureLocation=document.getElementById('adventureLocation').value;partyData.assets.hirelings=document.getElementById('assetsHirelings').value;partyData.assets.vehicles=document.getElementById('assetsVehicles').value;partyData.assets.property=document.getElementById('assetsProperty').value;partyData.assets.treasure=document.getElementById('assetsTreasure').value;partyData.houseRules=document.getElementById('houseRulesText').value;localStorage.setItem('dccPartyData',JSON.stringify(partyData));
+// Debounced push of player-editable fields only to /api/player-data
+clearTimeout(kvSaveTimeout);kvSaveTimeout=setTimeout(async()=>{try{
+// Extract portraits and familiars from characters into separate maps
+const portraits={};const familiars={};
+[...partyData.characters,...(partyData.inactiveCharacters||[])].forEach(ch=>{if(ch.portrait)portraits[ch.id]=ch.portrait;if(ch.familiar)familiars[ch.id]=ch.familiar;});
+// Fetch latest player data and merge to preserve other players' edits
+let remote={};try{const resp=await fetch('/api/player-data');if(resp.ok)remote=await resp.json();}catch(e){}
+const merged={
+partyName:partyData.partyName,characterOrder:partyData.characterOrder,
+adventureStatus:partyData.adventureStatus,adventureDate:partyData.adventureDate,
+adventureLocation:partyData.adventureLocation,adventureArt:partyData.adventureArt,
+silverMoonPhase:partyData.silverMoonPhase,weirdMoonPhase:partyData.weirdMoonPhase,
+assets:partyData.assets,houseRules:partyData.houseRules,
+graveyard:[...new Map([...(remote.graveyard||[]),...(partyData.graveyard||[])].map(g=>[g.name+g.cause,g])).values()],
+journal:[...new Map([...(remote.journal||[]),...(partyData.journal||[])].map(j=>[j.date+j.content?.substring(0,20),j])).values()],
+quests:{active:[...new Map([...((remote.quests?.active)||[]),...((partyData.quests?.active)||[])].map(q=>[q.text,q])).values()],accomplished:[...new Map([...((remote.quests?.accomplished)||[]),...((partyData.quests?.accomplished)||[])].map(q=>[q.text,q])).values()],rumors:[...new Map([...((remote.quests?.rumors)||[]),...((partyData.quests?.rumors)||[])].map(q=>[q.text,q])).values()]},
+playerNotes:{...(remote.playerNotes||{}),...(partyData.playerNotes||{})},
+companions:[...new Map([...(remote.companions||[]),...(partyData.companions||[])].map(c=>[c.id,c])).values()],
+portraits:{...(remote.portraits||{}),...portraits},
+familiars:{...(remote.familiars||{}),...familiars}
+};
+await fetch('/api/player-data',{method:'PUT',body:JSON.stringify(merged),headers:{'Content-Type':'application/json'}});
+console.log('Synced player data to KV');
+}catch(e){console.warn('KV sync failed',e);}},3000);}
+async function loadData(){
+// Fetch FG character data and player data from separate KV keys
+let fgData=null,playerDataRemote=null;
+try{
+const [fgResp,pdResp]=await Promise.all([fetch('/api/fg-characters'),fetch('/api/player-data')]);
+if(fgResp.ok)fgData=await fgResp.json();
+if(pdResp.ok)pdResp.status!==404&&(playerDataRemote=await pdResp.json());
+}catch(e){console.warn('KV fetch failed, using localStorage');}
+if(fgData||playerDataRemote){
+// Composite: player data is the base, FG characters overlay
+if(playerDataRemote){Object.keys(playerDataRemote).forEach(k=>{if(k!=='portraits'&&k!=='familiars')partyData[k]=playerDataRemote[k];});}
+if(fgData){
+partyData.characters=fgData.characters||[];
+partyData.inactiveCharacters=fgData.inactiveCharacters||[];
+// Apply portraits and familiars from player data onto characters
+const portraits=playerDataRemote?.portraits||{};
+const familiars=playerDataRemote?.familiars||{};
+partyData.characters.forEach(ch=>{if(portraits[ch.id])ch.portrait=portraits[ch.id];if(familiars[ch.id])ch.familiar=familiars[ch.id];});
+(partyData.inactiveCharacters||[]).forEach(ch=>{if(portraits[ch.id])ch.portrait=portraits[ch.id];if(familiars[ch.id])ch.familiar=familiars[ch.id];});
+}
+localStorage.setItem('dccPartyData',JSON.stringify(partyData));
+console.log('Loaded from KV (fg-characters + player-data)');
+}else{
+const saved=localStorage.getItem('dccPartyData');
+if(saved){partyData={...partyData,...JSON.parse(saved)};console.log('Loaded from localStorage');}
+}
+document.getElementById('partyName').value=partyData.partyName||'';document.getElementById('adventureStatus').value=partyData.adventureStatus||'';document.getElementById('adventureDate').value=partyData.adventureDate||'';document.getElementById('adventureLocation').value=partyData.adventureLocation||'';document.getElementById('assetsHirelings').value=partyData.assets?.hirelings||'';document.getElementById('assetsVehicles').value=partyData.assets?.vehicles||'';document.getElementById('assetsProperty').value=partyData.assets?.property||'';document.getElementById('assetsTreasure').value=partyData.assets?.treasure||'';document.getElementById('houseRulesText').value=partyData.houseRules||'';if(partyData.adventureArt){document.getElementById('adventureArtImage').src=partyData.adventureArt;document.getElementById('adventureArtImage').style.display='block';document.getElementById('adventureArtPlaceholder').style.display='none';}}
+function cycleMoon(type){if(type==='silver'){partyData.silverMoonPhase=(partyData.silverMoonPhase+1)%8;}else{partyData.weirdMoonPhase=(partyData.weirdMoonPhase+1)%8;}updateMoonDisplays();saveData();}
+function updateMoonDisplays(){document.getElementById('silverMoonSymbol').textContent=MOON_PHASES[partyData.silverMoonPhase||0];document.getElementById('weirdMoonSymbol').textContent=MOON_PHASES[partyData.weirdMoonPhase||0];}
+function importXML(){document.getElementById('xmlFileInput').click();}
+function exportData(){saveData();const blob=new Blob([JSON.stringify(partyData,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(partyData.partyName||'party').replace(/[^a-z0-9]/gi,'_')+'_save.json';a.click();}
+function importData(){document.getElementById('jsonFileInput').click();}
+function handleJSONImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){try{partyData=JSON.parse(ev.target.result);localStorage.setItem('dccPartyData',JSON.stringify(partyData));
+// Split and push to both KV keys
+const portraits={};const familiars={};
+[...partyData.characters,...(partyData.inactiveCharacters||[])].forEach(ch=>{if(ch.portrait)portraits[ch.id]=ch.portrait;if(ch.familiar)familiars[ch.id]=ch.familiar;});
+const fgPayload={characters:partyData.characters.map(ch=>({...ch,portrait:null,familiar:null})),inactiveCharacters:(partyData.inactiveCharacters||[]).map(ch=>({...ch,portrait:null,familiar:null}))};
+const playerPayload={partyName:partyData.partyName,characterOrder:partyData.characterOrder,adventureStatus:partyData.adventureStatus,adventureDate:partyData.adventureDate,adventureLocation:partyData.adventureLocation,adventureArt:partyData.adventureArt,silverMoonPhase:partyData.silverMoonPhase,weirdMoonPhase:partyData.weirdMoonPhase,assets:partyData.assets,houseRules:partyData.houseRules,journal:partyData.journal||[],graveyard:partyData.graveyard||[],quests:partyData.quests||{active:[],accomplished:[],rumors:[]},playerNotes:partyData.playerNotes||{},companions:partyData.companions||[],portraits,familiars};
+try{await Promise.all([fetch('/api/fg-characters',{method:'PUT',body:JSON.stringify(fgPayload),headers:{'Content-Type':'application/json'}}),fetch('/api/player-data',{method:'PUT',body:JSON.stringify(playerPayload),headers:{'Content-Type':'application/json'}})]);console.log('Pushed to both KV keys');}catch(err){console.warn('KV push failed, saved locally only');}
+loadData();renderAll();alert('Loaded!');}catch(err){alert('Error: '+err.message);}};reader.readAsText(file);e.target.value='';}
+function handleXMLImport(e){Array.from(e.target.files).forEach(file=>{const reader=new FileReader();reader.onload=function(ev){parseCharacterXML(ev.target.result);};reader.readAsText(file);});e.target.value='';}
+function parseCharacterXML(xmlString){const parser=new DOMParser();const xml=parser.parseFromString(xmlString,'text/xml');const character=xml.querySelector('character');if(!character){alert('Invalid XML');return;}const charData={id:'char_'+Date.now()+'_'+Math.random().toString(36).substr(2,9),name:getDirectChildText(character,'name')||'Unknown',portrait:null,familiar:null,level:getXMLNumber(character,'level'),exp:getXMLNumber(character,'exp'),expNeeded:getXMLNumber(character,'expneeded'),occupation:getXMLText(character,'occupation'),birthAugur:getXMLText(character,'birthaugur'),appearance:getXMLText(character,'appearance'),notes:getXMLText(character,'notes'),classes:parseClasses(character),abilities:{strength:parseAbility(character,'strength'),agility:parseAbility(character,'agility'),stamina:parseAbility(character,'stamina'),personality:parseAbility(character,'personality'),intelligence:parseAbility(character,'intelligence'),luck:parseAbility(character,'luck')},hp:{total:getXMLNumber(character,'hp > total'),wounds:getXMLNumber(character,'hp > wounds'),temporary:getXMLNumber(character,'hp > temporary')},ac:getXMLNumber(character,'defenses > ac > total'),initiative:getXMLNumber(character,'initiative > total'),saves:{fort:getXMLNumber(character,'saves > fortitude > total'),reflex:getXMLNumber(character,'saves > reflex > total'),will:getXMLNumber(character,'saves > willpower > total')},crit:{die:getXMLText(character,'crit > die'),table:getXMLText(character,'crit > table'),range:getXMLNumber(character,'crit > range')},coins:parseCoins(character),equipment:parseEquipment(character),weapons:parseWeapons(character),spells:parseSpells(character),spellCheck:getXMLNumber(character,'spellcheck > total'),casterLevel:getXMLNumber(character,'casterlevel'),features:parseFeatures(character),languages:parseLanguages(character),houseRules:parseHouseRules(character),actionDice:parseActionDice(character)};const existingIndex=partyData.characters.findIndex(c=>c.name===charData.name);if(existingIndex>=0){charData.portrait=partyData.characters[existingIndex].portrait;charData.familiar=partyData.characters[existingIndex].familiar;charData.id=partyData.characters[existingIndex].id;partyData.characters[existingIndex]=charData;}else{partyData.characters.push(charData);if(!partyData.characterOrder.left)partyData.characterOrder.left=[];if(!partyData.characterOrder.right)partyData.characterOrder.right=[];if(partyData.characterOrder.left.length<=partyData.characterOrder.right.length){partyData.characterOrder.left.push(charData.id);}else{partyData.characterOrder.right.push(charData.id);}}saveData();renderParty();renderPlayerNotes();updatePartyGold();
+// Push character data to fg-characters KV key
+const fgPayload={characters:partyData.characters.map(ch=>({...ch,portrait:null,familiar:null})),inactiveCharacters:(partyData.inactiveCharacters||[]).map(ch=>({...ch,portrait:null,familiar:null}))};
+fetch('/api/fg-characters',{method:'PUT',body:JSON.stringify(fgPayload),headers:{'Content-Type':'application/json'}}).then(()=>console.log('FG characters synced')).catch(()=>console.warn('FG character sync failed'));}
+function getXMLText(p,s){const el=p.querySelector(s);return el?el.textContent.trim():'';}
+function getDirectChildText(p,t){for(let c of p.children){if(c.tagName.toLowerCase()===t.toLowerCase()){let txt=c.textContent.trim();txt=txt.replace(/^\[.*?\]\s*/,'').replace(/\s*\(Copy\)\s*$/i,'');return txt;}}return '';}
+function getXMLNumber(p,s){const t=getXMLText(p,s);return t?parseInt(t)||0:0;}
+function parseAbility(c,n){const a=c.querySelector('abilities > '+n);if(!a)return{score:10,bonus:0,tempDamage:0,permDamage:0,spellburn:0,total:10};return{score:getXMLNumber(a,'score'),bonus:getXMLNumber(a,'bonus'),tempDamage:getXMLNumber(a,'damage > temporary'),permDamage:getXMLNumber(a,'damage > permanent'),spellburn:getXMLNumber(a,'spellburn > old')+getXMLNumber(a,'spellburn > new'),total:getXMLNumber(a,'total')};}
+function parseClasses(c){const cls=[];c.querySelectorAll('classes > *').forEach(cl=>{const n=getXMLText(cl,'name');const l=getXMLNumber(cl,'level');if(n&&l>0)cls.push({name:n,level:l});});return cls;}
+function parseCoins(c){const coins={};c.querySelectorAll('coins > *').forEach(coin=>{const n=getXMLText(coin,'name');const a=getXMLNumber(coin,'amount');if(n)coins[n]=a;});return coins;}
+function parseEquipment(c){const eq=[];c.querySelectorAll('inventorylist > *').forEach(item=>{const isId=getXMLNumber(item,'isidentified');if(isId===1||item.querySelector('isidentified')===null){eq.push({name:getXMLText(item,'name'),count:getXMLNumber(item,'count')||1,carried:getXMLNumber(item,'carried'),notch1:getXMLNumber(item,'notch1'),notch2:getXMLNumber(item,'notch2'),notch3:getXMLNumber(item,'notch3'),description:getXMLText(item,'description'),damage:getXMLText(item,'damage'),ac:getXMLNumber(item,'ac'),bonus:getXMLNumber(item,'bonus')});}});return eq;}
+function parseWeapons(c){const w=[];c.querySelectorAll('weaponlist > *').forEach(wp=>{w.push({name:getXMLText(wp,'name'),attackBonus:getXMLNumber(wp,'attackbonus'),damage:parseDamageList(wp)});});return w;}
+function parseDamageList(w){const dl=w.querySelector('damagelist > *');if(!dl)return'';const d=getXMLText(dl,'dice');const b=getXMLNumber(dl,'bonus');if(b>0)return d+'+'+b;if(b<0)return d+b;return d;}
+function parseSpells(c){const sp=[];c.querySelectorAll('powers > *').forEach(s=>{const g=getXMLText(s,'group');if(g==='Spells'||!g){sp.push({name:getXMLText(s,'name'),level:getXMLNumber(s,'level'),prepared:getXMLNumber(s,'prepared'),range:getXMLText(s,'range'),duration:getXMLText(s,'duration'),save:getXMLText(s,'save'),castingTable:parseCastingTable(s),manifestation:getXMLText(s,'manifestation'),misfire:getXMLText(s,'misfire'),corruption:getXMLText(s,'corruption')});}});return sp.sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name));}
+function parseCastingTable(s){const t=[];s.querySelectorAll('castingtable > *').forEach(r=>{t.push({fromRange:getXMLNumber(r,'fromrange'),toRange:getXMLNumber(r,'torange'),result:getXMLText(r,'result')});});return t.sort((a,b)=>a.fromRange-b.fromRange);}
+function parseFeatures(c){const f=[];c.querySelectorAll('featurelist > *').forEach(ft=>{f.push({name:getXMLText(ft,'name'),text:getXMLText(ft,'text')});});return f;}
+function parseLanguages(c){const l=[];c.querySelectorAll('languagelist > *').forEach(lg=>{const n=getXMLText(lg,'name');if(n)l.push(n);});return l;}
+function parseHouseRules(c){const hr=c.querySelector('houserules');if(!hr)return{};return{tidalDie:getXMLText(hr,'class > tidaldie'),petrification:getXMLNumber(hr,'class > petrification'),lucidity:getXMLNumber(hr,'class > lucidity'),focusDie:getXMLText(hr,'class > focusdie'),focusGem:getXMLText(hr,'class > focusgem'),shapingDie:getXMLText(hr,'class > shapingdie'),notes:getXMLText(hr,'class > notes'),wounds:getXMLText(hr,'wounds > notes')};}
+function parseActionDice(c){const d=[];if(getXMLText(c,'actiondie1')==='on')d.push('d20');if(getXMLText(c,'actiondie2')==='on')d.push('d14');if(getXMLText(c,'actiondie3')==='on')d.push('d10');return d.length>0?d.join(', '):'d20';}
+function renderParty(){const left=document.getElementById('partyColumnLeft');const right=document.getElementById('partyColumnRight');left.innerHTML='';right.innerHTML='';if(!partyData.characterOrder)partyData.characterOrder={left:[],right:[]};partyData.characterOrder.left.forEach(id=>{const ch=partyData.characters.find(c=>c.id===id);if(ch)left.appendChild(createCharacterCard(ch));});left.appendChild(createAddCard());partyData.characterOrder.right.forEach(id=>{const ch=partyData.characters.find(c=>c.id===id);if(ch)right.appendChild(createCharacterCard(ch));});right.appendChild(createAddCard());renderPlayerNotes();}
+function createCharacterCard(ch,isInactive=false){const card=document.createElement('div');card.className='character-card'+(isInactive?' inactive-character-card':'');const curHP=ch.hp.total-ch.hp.wounds;const pct=ch.hp.total>0?curHP/ch.hp.total:1;let hpClass='healthy';if(pct<=0.25)hpClass='critical';else if(pct<=0.5)hpClass='wounded';const pips=pct>=0.9?'♦♦♦':pct>=0.75?'♦♦◇':pct>=0.5?'♦♦○':pct>=0.25?'♦◇○':pct>0?'♦○○':'○○○';const clsName=ch.classes.length>0?ch.classes[0].name:'Adventurer';let nameClass='character-name';if(ch.name.length>15)nameClass+=' very-long-name';else if(ch.name.length>10)nameClass+=' long-name';const inactBtn=isInactive?`<button class="card-action-btn inactive" onclick="event.stopPropagation();activateCharacter('${ch.id}')" title="Activate">↻</button>`:`<button class="card-action-btn inactive" onclick="event.stopPropagation();deactivateCharacter('${ch.id}')" title="Inactive">⏸</button>`;card.innerHTML=`<div class="character-card-actions">${inactBtn}<button class="card-action-btn grave" onclick="event.stopPropagation();moveToGraveyard('${ch.id}',${isInactive})" title="Graveyard">†</button><button class="card-action-btn danger" onclick="event.stopPropagation();deleteCharacter('${ch.id}',${isInactive})" title="Delete">✕</button></div><div class="character-portrait" onclick="openCharacterModal('${ch.id}',${isInactive})">${ch.portrait?`<img src="${ch.portrait}">`:'<div class="portrait-placeholder">⚔</div>'}${ch.familiar?`<div class="familiar-badge" onclick="event.stopPropagation();openFamiliarModal('${ch.id}',${isInactive})">${ch.familiar.portrait?`<img src="${ch.familiar.portrait}">`:'🐾'}</div>`:''}</div><div class="character-info" onclick="openCharacterModal('${ch.id}',${isInactive})"><div class="${nameClass}" title="${ch.name}">${ch.name}</div><div class="character-class">${clsName} ${ch.level}</div><div class="character-hp ${hpClass}">HP: ${curHP}/${ch.hp.total}</div><div class="hp-pips">${pips}</div></div>`;card.oncontextmenu=(e)=>{e.preventDefault();uploadPortrait(ch.id,isInactive);};return card;}
+function createAddCard(){const card=document.createElement('div');card.className='add-character-card';card.innerHTML='<div class="plus">+</div><span>Import</span>';card.onclick=importXML;return card;}
+function renderInactive(){const c=document.getElementById('inactiveList');if(!partyData.inactiveCharacters)partyData.inactiveCharacters=[];if(partyData.inactiveCharacters.length===0){c.innerHTML='<p style="text-align:center;font-style:italic;grid-column:span 3;">No inactive characters.</p>';return;}c.innerHTML='';partyData.inactiveCharacters.forEach(ch=>{c.appendChild(createCharacterCard(ch,true));});}
+function deactivateCharacter(id){const ch=partyData.characters.find(c=>c.id===id);if(!ch||!confirm('Move '+ch.name+' to inactive?'))return;partyData.characters=partyData.characters.filter(c=>c.id!==id);partyData.characterOrder.left=partyData.characterOrder.left.filter(i=>i!==id);partyData.characterOrder.right=partyData.characterOrder.right.filter(i=>i!==id);if(!partyData.inactiveCharacters)partyData.inactiveCharacters=[];partyData.inactiveCharacters.push(ch);saveData();renderParty();renderInactive();updatePartyGold();}
+function activateCharacter(id){const ch=partyData.inactiveCharacters.find(c=>c.id===id);if(!ch)return;partyData.inactiveCharacters=partyData.inactiveCharacters.filter(c=>c.id!==id);partyData.characters.push(ch);if(partyData.characterOrder.left.length<=partyData.characterOrder.right.length){partyData.characterOrder.left.push(ch.id);}else{partyData.characterOrder.right.push(ch.id);}saveData();renderParty();renderInactive();updatePartyGold();}
+function deleteCharacter(id,isInactive=false){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch||!confirm('Delete '+ch.name+'?'))return;if(isInactive){partyData.inactiveCharacters=partyData.inactiveCharacters.filter(c=>c.id!==id);}else{partyData.characters=partyData.characters.filter(c=>c.id!==id);partyData.characterOrder.left=partyData.characterOrder.left.filter(i=>i!==id);partyData.characterOrder.right=partyData.characterOrder.right.filter(i=>i!==id);}if(partyData.playerNotes&&partyData.playerNotes[id])delete partyData.playerNotes[id];saveData();renderParty();renderInactive();updatePartyGold();}
+function moveToGraveyard(id,isInactive=false){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch)return;const clsName=ch.classes.length>0?ch.classes[0].name:'Adventurer';const cause=prompt(ch.name+' has fallen! Cause of death:','Slain in battle');if(cause===null)return;if(!partyData.graveyard)partyData.graveyard=[];partyData.graveyard.push({name:ch.name,className:clsName,level:ch.level,cause:cause||'Unknown'});if(isInactive){partyData.inactiveCharacters=partyData.inactiveCharacters.filter(c=>c.id!==id);}else{partyData.characters=partyData.characters.filter(c=>c.id!==id);partyData.characterOrder.left=partyData.characterOrder.left.filter(i=>i!==id);partyData.characterOrder.right=partyData.characterOrder.right.filter(i=>i!==id);}saveData();renderParty();renderInactive();renderGraveyard();updatePartyGold();}
+function openCharacterModal(id,isInactive=false){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch)return;document.getElementById('modalCharName').textContent=ch.name;const clsName=ch.classes.length>0?ch.classes[0].name:'Adventurer';const curHP=ch.hp.total-ch.hp.wounds;document.getElementById('modalBody').innerHTML=`<div class="char-sheet-header"><div class="char-sheet-portrait" onclick="uploadPortrait('${ch.id}',${isInactive})">${ch.portrait?`<img src="${ch.portrait}">`:'<div class="portrait-placeholder" style="font-size:3em;">⚔</div>'}</div><div class="char-sheet-basics"><div class="stat-row"><div><span class="stat-label">Class:</span> <span class="stat-value">${clsName}</span></div><div><span class="stat-label">Level:</span> <span class="stat-value">${ch.level}</span></div><div><span class="stat-label">XP:</span> <span class="stat-value">${ch.exp}/${ch.expNeeded}</span></div></div><div class="stat-row"><div><span class="stat-label">HP:</span> <span class="stat-value ${ch.hp.wounds>0?'damage':''}">${curHP}/${ch.hp.total}</span></div><div><span class="stat-label">AC:</span> <span class="stat-value">${ch.ac}</span></div><div><span class="stat-label">Init:</span> <span class="stat-value">${ch.initiative>=0?'+':''}${ch.initiative}</span></div></div><div class="stat-row"><div><span class="stat-label">Fort:</span> +${ch.saves.fort}</div><div><span class="stat-label">Ref:</span> +${ch.saves.reflex}</div><div><span class="stat-label">Will:</span> +${ch.saves.will}</div></div><div class="stat-row"><div><span class="stat-label">Crit:</span> ${ch.crit.die}/Table ${ch.crit.table}/${ch.crit.range}-20</div><div><span class="stat-label">Action:</span> ${ch.actionDice}</div></div>${ch.birthAugur?`<div style="margin-top:6px;font-size:0.85em;"><span class="stat-label">Augur:</span> ${ch.birthAugur}</div>`:''}</div></div><div class="char-tabs"><button class="char-tab active" onclick="switchCharTab(this,'abilities')">Abilities</button><button class="char-tab" onclick="switchCharTab(this,'equipment')">Equipment</button><button class="char-tab" onclick="switchCharTab(this,'spells')">Spells</button><button class="char-tab" onclick="switchCharTab(this,'features')">Features</button><button class="char-tab" onclick="switchCharTab(this,'notes')">Notes</button><button class="char-tab" onclick="switchCharTab(this,'tracking')">Tracking</button><button class="char-tab" onclick="switchCharTab(this,'familiar')">Familiar</button></div><div class="char-tab-content active" id="charTab-abilities">${renderAbilitiesTab(ch)}</div><div class="char-tab-content" id="charTab-equipment">${renderEquipmentTab(ch)}</div><div class="char-tab-content" id="charTab-spells">${renderSpellsTab(ch)}</div><div class="char-tab-content" id="charTab-features">${renderFeaturesTab(ch)}</div><div class="char-tab-content" id="charTab-notes">${renderNotesTab(ch)}</div><div class="char-tab-content" id="charTab-tracking">${renderTrackingTab(ch)}</div><div class="char-tab-content" id="charTab-familiar">${renderFamiliarTab(ch,id,isInactive)}</div>`;document.getElementById('characterModal').classList.add('active');}
+function closeCharacterModal(){document.getElementById('characterModal').classList.remove('active');}
+function switchCharTab(btn,name){document.querySelectorAll('.char-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.char-tab-content').forEach(c=>c.classList.remove('active'));btn.classList.add('active');document.getElementById('charTab-'+name).classList.add('active');}
+function renderAbilitiesTab(ch){const abs=['strength','agility','stamina','personality','intelligence','luck'];const labels=['Strength','Agility','Stamina','Personality','Intelligence','Luck'];let rows=abs.map((ab,i)=>{const a=ch.abilities[ab];const dmg=a.tempDamage>0||a.permDamage>0||a.spellburn>0;return `<tr><td>${labels[i]}</td><td>${a.score}</td><td>${a.bonus>=0?'+':''}${a.bonus}</td><td>${a.tempDamage||'-'}</td><td>${a.spellburn||'-'}</td><td class="${dmg?'damaged':''}">${a.total}</td></tr>`;}).join('');return `<table class="abilities-table"><thead><tr><th>Ability</th><th>Score</th><th>Mod</th><th>Temp</th><th>Burn</th><th>Cur</th></tr></thead><tbody>${rows}</tbody></table>`;}
+function renderEquipmentTab(ch){let wRows=ch.weapons.map(w=>`<tr><td>${w.name}</td><td>${w.attackBonus>=0?'+':''}${w.attackBonus}</td><td>${w.damage}</td></tr>`).join('');let eRows=ch.equipment.map(it=>{const notch=`${it.notch1?'●':'○'} ${it.notch2?'●':'○'} ${it.notch3?'●':'○'}`;const carried=it.carried===2?'✓':it.carried===1?'○':'-';let desc='';if(it.bonus)desc+=`+${it.bonus} `;if(it.ac)desc+=`AC+${it.ac} `;if(it.damage)desc+=`Dmg:${it.damage}`;return `<tr><td>${it.name}${desc?`<div class="item-desc">${desc}</div>`:''}</td><td>${it.count}</td><td>${carried}</td><td class="notch">${notch}</td></tr>`;}).join('');const coinDisp=Object.entries(ch.coins||{}).filter(([_,a])=>a>0).map(([n,a])=>`<span class="currency-item"><span class="amount">${a}</span> ${n}</span>`).join('');return `<h4 class="section-subheader">Weapons</h4><table class="equipment-table"><thead><tr><th>Weapon</th><th>Atk</th><th>Dmg</th></tr></thead><tbody>${wRows||'<tr><td colspan="3">None</td></tr>'}</tbody></table><h4 class="section-subheader">Equipment</h4><table class="equipment-table"><thead><tr><th>Item</th><th>Qty</th><th>Carried</th><th>Notch</th></tr></thead><tbody>${eRows||'<tr><td colspan="4">None</td></tr>'}</tbody></table><h4 class="section-subheader">Currency</h4><div class="currency-display">${coinDisp||'None'}</div>`;}
+function renderSpellsTab(ch){if(!ch.spells||ch.spells.length===0)return'<p>No spells.</p>';let rows=ch.spells.map((s,i)=>`<tr class="${s.prepared?'spell-prepared':'spell-not-prepared'}"><td>${s.level}</td><td><span class="spell-name" onclick="toggleSpellDetail(${i})">${s.name}</span></td><td>${s.prepared?'✓':'○'}</td><td>${s.range||'-'}</td><td>${s.duration||'-'}</td><td>${s.save||'-'}</td></tr><tr id="spellDetail-${i}" style="display:none;"><td colspan="6"><div class="spell-detail">${renderSpellDetail(s)}</div></td></tr>`).join('');return `<p><strong>Spell Check:</strong> +${ch.spellCheck} | <strong>CL:</strong> ${ch.casterLevel}</p><table class="spells-table"><thead><tr><th>Lvl</th><th>Spell</th><th>Prep</th><th>Range</th><th>Dur</th><th>Save</th></tr></thead><tbody>${rows}</tbody></table><p style="margin-top:8px;font-size:0.8em;font-style:italic;">Click spell name for casting table.</p>`;}
+function renderSpellDetail(s){let html='';if(s.castingTable&&s.castingTable.length>0){html+='<h4>Casting Results</h4><table class="casting-table"><thead><tr><th>Roll</th><th>Effect</th></tr></thead><tbody>';s.castingTable.forEach(r=>{const range=r.fromRange===r.toRange?r.fromRange:`${r.fromRange}-${r.toRange}`;html+=`<tr><td>${range}</td><td>${r.result}</td></tr>`;});html+='</tbody></table>';}if(s.manifestation)html+=`<p><strong>Manifestation:</strong> ${s.manifestation}</p>`;if(s.misfire)html+=`<p><strong>Misfire:</strong> ${s.misfire}</p>`;if(s.corruption)html+=`<p><strong>Corruption:</strong> ${s.corruption}</p>`;return html||'<p>No details.</p>';}
+function toggleSpellDetail(i){const row=document.getElementById('spellDetail-'+i);row.style.display=row.style.display==='none'?'table-row':'none';}
+function renderFeaturesTab(ch){if(!ch.features||ch.features.length===0)return'<p>No features.</p>';return `<ul class="features-list">${ch.features.map(f=>`<li><div class="feature-name">${f.name}</div><div class="feature-text">${f.text.replace(/\n/g,'<br>')}</div></li>`).join('')}</ul>`;}
+function renderNotesTab(ch){return `<h4 class="section-subheader">Appearance</h4><p>${ch.appearance?ch.appearance.replace(/\n/g,'<br>'):'-'}</p><h4 class="section-subheader">Languages</h4><p>${ch.languages.length>0?ch.languages.join(', '):'-'}</p><h4 class="section-subheader">Notes</h4><p>${ch.notes?ch.notes.replace(/\n/g,'<br>'):'-'}</p>${ch.houseRules?.wounds?`<h4 class="section-subheader">Wounds</h4><p>${ch.houseRules.wounds.replace(/\n/g,'<br>')}</p>`:''}`;}
+function renderTrackingTab(ch){const hr=ch.houseRules||{};return `<p style="font-style:italic;margin-bottom:12px;">Custom class tracking.</p><div class="class-tracking"><div class="tracking-item"><label>Tidal Die</label><input value="${hr.tidalDie||''}" readonly></div><div class="tracking-item"><label>Petrification</label><input value="${hr.petrification||0}" readonly></div><div class="tracking-item"><label>Lucidity</label><input value="${hr.lucidity||0}" readonly></div><div class="tracking-item"><label>Focus Die</label><input value="${hr.focusDie||''}" readonly></div><div class="tracking-item"><label>Focus Gem</label><input value="${hr.focusGem||''}" readonly></div><div class="tracking-item"><label>Shaping Die</label><input value="${hr.shapingDie||''}" readonly></div></div>${hr.notes?`<h4 class="section-subheader" style="margin-top:15px;">Class Notes</h4><p>${hr.notes.replace(/\n/g,'<br>')}</p>`:''}`;}
+function renderFamiliarTab(ch,id,isInactive){const f=ch.familiar||{};return `<h4 class="section-subheader">Familiar / Pet</h4><p style="font-style:italic;margin-bottom:12px;">Click portrait to upload. Edit stat block below.</p><div style="display:grid;grid-template-columns:90px 1fr;gap:12px;"><div class="char-sheet-portrait" style="width:90px;height:90px;cursor:pointer;" onclick="uploadFamiliarPortrait('${id}',${isInactive})">${f.portrait?`<img src="${f.portrait}">`:'<div class="portrait-placeholder" style="font-size:1.8em;">🐾</div>'}</div><div><div class="tracking-item" style="margin-bottom:8px;"><label>Name</label><input type="text" id="familiarName-${id}" value="${f.name||''}" onchange="updateFamiliar('${id}','name',this.value,${isInactive})"></div><div class="tracking-item"><label>Stat Block</label><textarea class="notes-textarea" id="familiarStats-${id}" style="min-height:100px;" placeholder="Init +1; Atk bite +2 melee (1d4); AC 12; HD 1d6; hp 4; MV 30'; Act 1d20; SV Fort +1, Ref +3, Will +0; AL N." onchange="updateFamiliar('${id}','statblock',this.value,${isInactive})">${f.statblock||''}</textarea></div></div></div>`;}
+function updateFamiliar(id,field,val,isInactive){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch)return;if(!ch.familiar)ch.familiar={};ch.familiar[field]=val;saveData();renderParty();}
+function openFamiliarModal(id,isInactive){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch||!ch.familiar)return;const f=ch.familiar;document.getElementById('familiarModalName').textContent=f.name||'Familiar';document.getElementById('familiarModalBody').innerHTML=`<div style="display:grid;grid-template-columns:100px 1fr;gap:12px;"><div class="char-sheet-portrait" style="width:100px;height:100px;">${f.portrait?`<img src="${f.portrait}">`:'<div class="portrait-placeholder" style="font-size:2.5em;">🐾</div>'}</div><div style="font-family:'Crimson Text',serif;line-height:1.5;padding:10px;background:var(--parchment-bg);border:1px solid var(--border-brown);"><strong style="color:var(--ink-red);">${f.name||'Familiar'}:</strong> ${f.statblock||'No stats.'}</div></div>`;document.getElementById('familiarModal').classList.add('active');}
+function closeFamiliarModal(){document.getElementById('familiarModal').classList.remove('active');}
+function uploadPortrait(id,isInactive=false){currentPortraitCharId=id;window.currentPortraitIsInactive=isInactive;document.getElementById('portraitInput').click();}
+function handlePortraitUpload(e){const file=e.target.files[0];if(!file||!currentPortraitCharId)return;const reader=new FileReader();reader.onload=function(ev){const list=window.currentPortraitIsInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===currentPortraitCharId);if(ch){ch.portrait=ev.target.result;saveData();renderParty();renderInactive();if(document.getElementById('characterModal').classList.contains('active')){openCharacterModal(currentPortraitCharId,window.currentPortraitIsInactive);}}};reader.readAsDataURL(file);e.target.value='';}
+function uploadFamiliarPortrait(id,isInactive){currentFamiliarCharId=id;window.currentFamiliarIsInactive=isInactive;document.getElementById('familiarPortraitInput').click();}
+function handleFamiliarPortraitUpload(e){const file=e.target.files[0];if(!file||!currentFamiliarCharId)return;const reader=new FileReader();reader.onload=function(ev){const list=window.currentFamiliarIsInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===currentFamiliarCharId);if(ch){if(!ch.familiar)ch.familiar={};ch.familiar.portrait=ev.target.result;saveData();renderParty();renderInactive();if(document.getElementById('characterModal').classList.contains('active')){openCharacterModal(currentFamiliarCharId,window.currentFamiliarIsInactive);}}};reader.readAsDataURL(file);e.target.value='';}
+function uploadAdventureArt(){document.getElementById('adventureArtInput').click();}
+function handleAdventureArtUpload(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){partyData.adventureArt=ev.target.result;document.getElementById('adventureArtImage').src=ev.target.result;document.getElementById('adventureArtImage').style.display='block';document.getElementById('adventureArtPlaceholder').style.display='none';saveData();};reader.readAsDataURL(file);e.target.value='';}
+function renderCompanions(){const c=document.getElementById('companionsList');if(!partyData.companions)partyData.companions=[];if(partyData.companions.length===0){c.innerHTML='<p style="text-align:center;font-style:italic;grid-column:span 3;">No companions yet.</p>';return;}c.innerHTML=partyData.companions.map((comp,i)=>`<div class="gravestone" style="cursor:pointer;" onclick="editCompanion(${i})"><span class="delete-grave" onclick="event.stopPropagation();deleteCompanion(${i})">✕</span><div style="width:50px;height:50px;margin:0 auto 8px;border-radius:50%;border:2px solid var(--border-brown);overflow:hidden;background:var(--parchment-dark);display:flex;align-items:center;justify-content:center;">${comp.portrait?`<img src="${comp.portrait}" style="width:100%;height:100%;object-fit:cover;">`:'<span style="font-size:1.3em;">🐾</span>'}</div><div class="dead-name">${comp.name}</div><div class="dead-class">${comp.type}</div><div class="dead-cause">Owner: ${comp.owner||'Party'}</div></div>`).join('');}
+function addCompanion(){const name=document.getElementById('companionNameInput').value.trim();const type=document.getElementById('companionTypeInput').value.trim();const owner=document.getElementById('companionOwnerInput').value.trim();if(!name){alert('Enter a name.');return;}if(!partyData.companions)partyData.companions=[];partyData.companions.push({id:'comp_'+Date.now(),name,type:type||'Companion',owner:owner||'Party',portrait:null,statblock:''});document.getElementById('companionNameInput').value='';document.getElementById('companionTypeInput').value='';document.getElementById('companionOwnerInput').value='';saveData();renderCompanions();}
+function deleteCompanion(i){if(!confirm('Delete?'))return;partyData.companions.splice(i,1);saveData();renderCompanions();}
+function editCompanion(i){const comp=partyData.companions[i];const newStat=prompt('Stat block for '+comp.name+':',comp.statblock||'');if(newStat!==null){comp.statblock=newStat;saveData();}}
+function renderQuests(){renderQuestList('active','activeQuests');renderQuestList('accomplished','accomplishments');renderQuestList('rumors','rumors');}
+function renderQuestList(type,elId){const list=document.getElementById(elId);const quests=partyData.quests?.[type]||[];list.innerHTML=quests.map((q,i)=>`<li class="quest-item ${q.completed?'completed':''}"><input type="checkbox" ${q.completed?'checked':''} onchange="toggleQuest('${type}',${i})"><input type="text" class="quest-text" value="${q.text}" onchange="updateQuest('${type}',${i},this.value)"><span class="delete-quest" onclick="deleteQuest('${type}',${i})">✕</span></li>`).join('');}
+function addQuest(type){if(!partyData.quests)partyData.quests={active:[],accomplished:[],rumors:[]};if(!partyData.quests[type])partyData.quests[type]=[];partyData.quests[type].push({text:'New entry...',completed:false});saveData();renderQuests();}
+function updateQuest(type,i,text){partyData.quests[type][i].text=text;saveData();}
+function toggleQuest(type,i){partyData.quests[type][i].completed=!partyData.quests[type][i].completed;saveData();renderQuests();}
+function deleteQuest(type,i){partyData.quests[type].splice(i,1);saveData();renderQuests();}
+function renderJournal(){const c=document.getElementById('sharedJournal');const entries=partyData.journal||[];c.innerHTML=entries.map((e,i)=>`<div class="journal-entry"><div class="journal-entry-header"><input type="text" class="journal-entry-date" value="${e.date||'Session '+(i+1)}" onchange="updateJournalDate(${i},this.value)"><span class="delete-quest" onclick="deleteJournalEntry(${i})">✕</span></div><textarea class="journal-entry-content" onchange="updateJournalContent(${i},this.value)">${e.content||''}</textarea></div>`).join('')||'<p style="font-style:italic;">No entries yet.</p>';renderPlayerNotes();}
+function addJournalEntry(){if(!partyData.journal)partyData.journal=[];partyData.journal.push({date:new Date().toLocaleDateString(),content:''});saveData();renderJournal();}
+function updateJournalDate(i,d){partyData.journal[i].date=d;saveData();}
+function updateJournalContent(i,c){partyData.journal[i].content=c;saveData();}
+function deleteJournalEntry(i){partyData.journal.splice(i,1);saveData();renderJournal();}
+function renderPlayerNotes(){const c=document.getElementById('playerNotes');if(!partyData.playerNotes)partyData.playerNotes={};const allChars=[...partyData.characters,...(partyData.inactiveCharacters||[])];c.innerHTML=allChars.map(ch=>`<div class="player-note-card"><h4>${ch.name}'s Notes</h4><textarea onchange="updatePlayerNote('${ch.id}',this.value)">${partyData.playerNotes[ch.id]||''}</textarea></div>`).join('')||'<p>Import characters first.</p>';}
+function updatePlayerNote(id,c){partyData.playerNotes[id]=c;saveData();}
+function renderGraveyard(){const c=document.getElementById('graveyardList');const graves=partyData.graveyard||[];c.innerHTML=graves.map((g,i)=>`<div class="gravestone"><span class="delete-grave" onclick="deleteGrave(${i})">✕</span><div class="dead-name">${g.name}</div><div class="dead-class">${g.className} Level ${g.level}</div><div class="dead-cause">"${g.cause}"</div></div>`).join('')||'<p style="text-align:center;font-style:italic;">No fallen comrades yet.</p>';}
+function addGravestone(){const name=document.getElementById('graveNameInput').value.trim();const cls=document.getElementById('graveClassInput').value.trim();const lvl=document.getElementById('graveLevelInput').value.trim();const cause=document.getElementById('graveCauseInput').value.trim();if(!name){alert('Enter a name.');return;}if(!partyData.graveyard)partyData.graveyard=[];partyData.graveyard.push({name,className:cls||'Adventurer',level:lvl||'?',cause:cause||'Unknown'});document.getElementById('graveNameInput').value='';document.getElementById('graveClassInput').value='';document.getElementById('graveLevelInput').value='';document.getElementById('graveCauseInput').value='';saveData();renderGraveyard();}
+function deleteGrave(i){partyData.graveyard.splice(i,1);saveData();renderGraveyard();}
+function renderWiki(){renderWikiClasses();renderWikiEquipment();}
+function switchWikiTab(btn,name){document.querySelectorAll('.wiki-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.wiki-tab-content').forEach(c=>c.classList.remove('active'));btn.classList.add('active');document.getElementById('wikiTab-'+name).classList.add('active');}
+function renderWikiClasses(){const c=document.getElementById('wikiClassList');const order=['warrior','cleric','thief','wizard','bard','munk','psion','ranger','foundling','woolly_neanderthal','bishop_fish','stoneborn_dwarf','witch'];c.innerHTML=order.map(key=>{const cls=CLASS_DATA[key];return `<li class="wiki-class-item"><div class="wiki-class-header" onclick="toggleWikiClass('${key}')"><span>${cls.name}</span>${cls.draft?'<span class="draft-badge">DRAFT</span>':''}</div><div class="wiki-class-content" id="wikiClass-${key}">${cls.description.replace(/\n/g,'<br>')}</div></li>`;}).join('');}
+function toggleWikiClass(key){document.getElementById('wikiClass-'+key).classList.toggle('active');}
+function renderWikiEquipment(){const c=document.getElementById('wikiEquipmentContent');let html='<div class="equipment-category"><h4>Weapons</h4><table class="equipment-table"><thead><tr><th>Weapon</th><th>Cost</th><th>Damage</th><th>Notes</th></tr></thead><tbody>';EQUIPMENT_DATA.weapons.forEach(w=>{html+=`<tr><td>${w.name}</td><td>${w.cost}</td><td>${w.damage}</td><td>${w.notes}</td></tr>`;});html+='</tbody></table></div>';html+='<div class="equipment-category"><h4>Armor</h4><table class="equipment-table"><thead><tr><th>Armor</th><th>Cost</th><th>AC</th><th>Check</th><th>Fumble</th><th>Speed</th></tr></thead><tbody>';EQUIPMENT_DATA.armor.forEach(a=>{html+=`<tr><td>${a.name}</td><td>${a.cost}</td><td>${a.ac}</td><td>${a.penalty}</td><td>${a.fumble}</td><td>${a.speed}</td></tr>`;});html+='</tbody></table></div>';html+='<div class="equipment-category"><h4>Adventuring Gear</h4><table class="equipment-table"><thead><tr><th>Item</th><th>Cost</th><th>Notes</th></tr></thead><tbody>';EQUIPMENT_DATA.gear.forEach(g=>{html+=`<tr><td>${g.name}</td><td>${g.cost}</td><td>${g.notes}</td></tr>`;});html+='</tbody></table></div>';html+='<div class="equipment-category"><h4>Services</h4><table class="equipment-table"><thead><tr><th>Service</th><th>Cost</th><th>Notes</th></tr></thead><tbody>';EQUIPMENT_DATA.services.forEach(s=>{html+=`<tr><td>${s.name}</td><td>${s.cost}</td><td>${s.notes}</td></tr>`;});html+='</tbody></table></div>';c.innerHTML=html;}
+function updatePartyGold(){let total=0;partyData.characters.forEach(ch=>{const coins=ch.coins||{};total+=(coins.PP||0)*10;total+=(coins.GP||0);total+=(coins.EP||0)*0.5;total+=(coins.SP||0)*0.1;total+=(coins.CP||0)*0.01;});document.getElementById('partyGoldTotal').textContent=Math.floor(total).toLocaleString();}
+document.getElementById('characterModal').addEventListener('click',function(e){if(e.target===this)closeCharacterModal();});
+document.getElementById('familiarModal').addEventListener('click',function(e){if(e.target===this)closeFamiliarModal();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeCharacterModal();closeFamiliarModal();}});
+</script>
+</body>
+</html>
