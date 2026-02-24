@@ -422,9 +422,9 @@ function Backup-PlayerData {
             Set-Content -Path $hourlyFile -Value $json -Encoding UTF8
             Write-Log "Player-data hourly backup saved"
 
-            # Clean up backups older than 7 days
+            # Clean up backups older than 30 days
             Get-ChildItem $BackupDir -Filter "player-data-20*.json" |
-                Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
+                Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
                 Remove-Item -Force
         }
 
