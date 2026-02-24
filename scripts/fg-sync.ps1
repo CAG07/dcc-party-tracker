@@ -1,7 +1,6 @@
 # fg-sync.ps1
-# Watches Fantasy Grounds db.xml for changes and pushes character data
-# to Cloudflare KV immediately when the file is modified.
-# Uses FileSystemWatcher (event-driven) instead of polling.
+# Polls for changes to Fantasy Grounds db.xml and pushes character data
+# to Cloudflare KV when the file is modified.
 # Run this in the background during a session, or register it at login.
 
 # --- CONFIGURATION ---
@@ -21,8 +20,8 @@ $Endpoint = "https://your-project-name.pages.dev/api/fg-characters"
 # Log file
 $LogFile = "$env:LOCALAPPDATA\fg-sync-$CampaignName.log"
 
-# Debounce: minimum seconds between uploads (FG may write multiple times rapidly)
-$DebounceSeconds = 5
+# Poll interval: how often to check for changes (in seconds)
+$PollInterval = 30
 
 # --- LOGGING ---
 
@@ -398,9 +397,9 @@ function Push-Characters {
 
 Write-Log "=== FG Sync Starting ==="
 Write-Log "Campaign: $CampaignName"
-Write-Log "Watching: $CampaignFile"
+Write-Log "Monitoring: $CampaignFile"
 Write-Log "Endpoint: $Endpoint"
-Write-Log "Debounce: ${DebounceSeconds}s"
+Write-Log "Poll interval: ${PollInterval}s"
 
 if (-not (Test-Path $CampaignDir)) {
     Write-Log "ERROR: Campaign directory not found: $CampaignDir"
@@ -425,43 +424,36 @@ if (Test-Path $CampaignFile) {
     Push-Characters
 }
 
-# --- FILE SYSTEM WATCHER ---
+# --- POLL LOOP ---
 
-$watcher = New-Object System.IO.FileSystemWatcher
-$watcher.Path = $CampaignDir
-$watcher.Filter = "db.xml"
-$watcher.NotifyFilter = [System.IO.NotifyFilters]::LastWrite -bor [System.IO.NotifyFilters]::Size -bor [System.IO.NotifyFilters]::CreationTime -bor [System.IO.NotifyFilters]::FileName
-$watcher.EnableRaisingEvents = $true
+$script:lastModified = [DateTime]::MinValue
 
-# Debounce timer — prevents multiple rapid fires from a single FG save
-$script:lastPush = [DateTime]::MinValue
-
-$action = {
-    $now = [DateTime]::UtcNow
-    $elapsed = ($now - $script:lastPush).TotalSeconds
-    if ($elapsed -lt $using:DebounceSeconds) {
-        return  # Too soon, skip
-    }
-    $script:lastPush = $now
-
-    # Small delay to let FG finish writing the file
-    Start-Sleep -Milliseconds 500
-
-    Push-Characters
+# Record current timestamp if file exists (we already pushed it above)
+if (Test-Path $CampaignFile) {
+    $script:lastModified = (Get-Item $CampaignFile).LastWriteTimeUtc
 }
 
-Register-ObjectEvent $watcher Changed -Action $action | Out-Null
-Register-ObjectEvent $watcher Renamed -Action $action | Out-Null
-
-Write-Log "Watcher active. Waiting for db.xml changes..."
+Write-Log "Polling every ${PollInterval}s for db.xml changes..."
 Write-Log "Press Ctrl+C to stop."
 
-# Keep the script alive
 try {
-    while ($true) { Start-Sleep -Seconds 60 }
+    while ($true) {
+        Start-Sleep -Seconds $PollInterval
+
+        if (-not (Test-Path $CampaignFile)) { continue }
+
+        $currentModified = (Get-Item $CampaignFile).LastWriteTimeUtc
+        if ($currentModified -gt $script:lastModified) {
+            Write-Log "db.xml changed ($(Get-Date $currentModified -Format 'HH:mm:ss')). Syncing..."
+            $script:lastModified = $currentModified
+
+            # Brief pause to let FG finish writing
+            Start-Sleep -Seconds 1
+
+            Push-Characters
+        }
+    }
 }
 finally {
-    $watcher.EnableRaisingEvents = $false
-    $watcher.Dispose()
     Write-Log "=== FG Sync Stopped ==="
 }
