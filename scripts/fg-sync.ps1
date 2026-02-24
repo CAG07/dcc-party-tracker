@@ -20,8 +20,17 @@ $Endpoint = "https://your-project-name.pages.dev/api/fg-characters"
 # Log file
 $LogFile = "$env:LOCALAPPDATA\fg-sync-$CampaignName.log"
 
+# Backup directory for player-data
+$BackupDir = Join-Path $CampaignDir "backups"
+
+# Base site URL (derived from endpoint)
+$SiteBase = $Endpoint -replace '/api/fg-characters$', ''
+
 # Poll interval: how often to check for changes (in seconds)
 $PollInterval = 30
+
+# Backup interval: how often to back up player-data (in seconds)
+$BackupInterval = 600
 
 # --- LOGGING ---
 
@@ -393,6 +402,39 @@ function Push-Characters {
     }
 }
 
+function Backup-PlayerData {
+    try {
+        $pdUrl = "$SiteBase/api/player-data"
+        $resp = Invoke-RestMethod -Uri $pdUrl -Method Get -TimeoutSec 15 -ErrorAction Stop
+        $json = $resp | ConvertTo-Json -Depth 10
+
+        if (-not (Test-Path $BackupDir)) {
+            New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
+        }
+
+        # Rolling backup: keep latest + timestamped
+        $latestFile = Join-Path $BackupDir "player-data-latest.json"
+        Set-Content -Path $latestFile -Value $json -Encoding UTF8
+
+        # Timestamped backup once per hour (keep history)
+        $hourlyFile = Join-Path $BackupDir "player-data-$(Get-Date -Format 'yyyy-MM-dd-HH').json"
+        if (-not (Test-Path $hourlyFile)) {
+            Set-Content -Path $hourlyFile -Value $json -Encoding UTF8
+            Write-Log "Player-data hourly backup saved"
+
+            # Clean up backups older than 7 days
+            Get-ChildItem $BackupDir -Filter "player-data-20*.json" |
+                Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
+                Remove-Item -Force
+        }
+
+        Write-Log "Player-data backup updated"
+    }
+    catch {
+        Write-Log "Backup warning: $_"
+    }
+}
+
 # --- STARTUP VALIDATION ---
 
 Write-Log "=== FG Sync Starting ==="
@@ -427,13 +469,20 @@ if (Test-Path $CampaignFile) {
 # --- POLL LOOP ---
 
 $script:lastModified = [DateTime]::MinValue
+$script:lastBackup = [DateTime]::MinValue
 
 # Record current timestamp if file exists (we already pushed it above)
 if (Test-Path $CampaignFile) {
     $script:lastModified = (Get-Item $CampaignFile).LastWriteTimeUtc
 }
 
+# Initial backup
+Backup-PlayerData
+$script:lastBackup = [DateTime]::UtcNow
+
 Write-Log "Polling every ${PollInterval}s for db.xml changes..."
+Write-Log "Backing up player-data every ${BackupInterval}s"
+Write-Log "Backups saved to: $BackupDir"
 Write-Log "Press Ctrl+C to stop."
 
 try {
@@ -452,6 +501,13 @@ try {
                 Start-Sleep -Seconds 1
 
                 Push-Characters
+            }
+
+            # Periodic player-data backup
+            $elapsed = ([DateTime]::UtcNow - $script:lastBackup).TotalSeconds
+            if ($elapsed -ge $BackupInterval) {
+                Backup-PlayerData
+                $script:lastBackup = [DateTime]::UtcNow
             }
         }
         catch {
