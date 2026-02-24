@@ -9,8 +9,8 @@ Displays your Dungeon Crawl Classics RPG party. Character data syncs automatical
 ## What You Need
 
 - **Windows OS** for GM's PC — the sync script is a PowerShell script that runs on Windows
-- **GitHub account** (free) — this stores the website code
-- **Cloudflare account** (free) — this hosts the website so everyone can access it
+- **GitHub account** (free) — site repo
+- **Cloudflare account** (free) — hosting
 
 ## Project Files
 
@@ -45,7 +45,6 @@ dcc-party-tracker/
 3. On the "Create a new fork" page:
    - **Owner**: should already show your GitHub username
    - **Repository name**: leave as `dcc-party-tracker` (or rename it if you like)
-   - Uncheck "Copy the `main` branch only" if it appears
 4. Click **Create fork**
 
 ---
