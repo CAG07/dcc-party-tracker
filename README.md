@@ -221,5 +221,3 @@ Each sync script instance watches a different campaign folder and pushes to a di
 
 - **Cost**: Everything used here is free. Cloudflare's free tier allows 100K reads/day and 1K writes/day
 - **Autosave**: Fantasy Grounds writes db.xml every ~5 minutes during a session, and on session close. The GM can also type `/save` in FG chat for an immediate save.
-- **File Safety**: The sync script never writes to db.xml — it only reads. It cannot corrupt your campaign data.
-- **Merge Logic**: Player data (journals, quests, graveyard) uses union-merge, so multiple players can edit at the same time without overwriting each other's changes.
