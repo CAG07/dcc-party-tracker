@@ -83,8 +83,8 @@ if (-not (Test-Path $SyncScript)) {
 }
 
 $content = Get-Content $SyncScript -Raw
-$content = $content -replace '\$CampaignName = "YOUR_CAMPAIGN_NAME"', "`$CampaignName = `"$selectedCampaign`""
-$content = $content -replace '\$Endpoint = "https://your-project-name\.pages\.dev/api/fg-characters"', "`$Endpoint = `"$Endpoint`""
+$content = $content -replace '\$CampaignName = ".*?"', "`$CampaignName = `"$selectedCampaign`""
+$content = $content -replace '\$Endpoint = ".*?"', "`$Endpoint = `"$Endpoint`""
 Set-Content $SyncScript -Value $content -Encoding UTF8
 
 Write-Host "Updated fg-sync.ps1 with your settings." -ForegroundColor Green
@@ -145,13 +145,38 @@ if ($install -eq 'y') {
 
     if (Test-Path $InstallScript) {
         & $InstallScript -CampaignName $selectedCampaign -ScriptPath $SyncScript
+
         # Start the task immediately (don't wait for next login)
         $TaskName = "FG-Sync-$selectedCampaign"
-        try {
-            Start-ScheduledTask -TaskName $TaskName
-            Write-Host "Background task started!" -ForegroundColor Green
-        } catch {
-            Write-Host "Task installed but could not auto-start. Start it manually in Task Scheduler." -ForegroundColor Yellow
+        Write-Host ""
+        Write-Host "Starting background task '$TaskName'..." -ForegroundColor Cyan
+
+        # Verify task was registered
+        $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        if (-not $task) {
+            Write-Host "WARNING: Task was not registered. Try running setup as Administrator." -ForegroundColor Yellow
+        } else {
+            # Stop if already running (from previous install)
+            if ($task.State -eq 'Running') {
+                Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+                Start-Sleep -Seconds 2
+            }
+
+            # Start it
+            Start-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 3
+
+            $task = Get-ScheduledTask -TaskName $TaskName
+            if ($task.State -eq 'Running') {
+                Write-Host "Background task is running!" -ForegroundColor Green
+            } else {
+                Write-Host "Task state: $($task.State)" -ForegroundColor Yellow
+                Write-Host ""
+                Write-Host "The task may need to be started manually:" -ForegroundColor Yellow
+                Write-Host "  1. Open Task Scheduler (search 'Task Scheduler' in Start menu)" -ForegroundColor White
+                Write-Host "  2. Find '$TaskName' in the list" -ForegroundColor White
+                Write-Host "  3. Right-click it and choose 'Run'" -ForegroundColor White
+            }
         }
     } else {
         Write-Host "install-fg-sync.ps1 not found. You can install it manually later." -ForegroundColor Yellow

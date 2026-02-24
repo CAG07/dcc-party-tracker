@@ -440,17 +440,22 @@ try {
     while ($true) {
         Start-Sleep -Seconds $PollInterval
 
-        if (-not (Test-Path $CampaignFile)) { continue }
+        try {
+            if (-not (Test-Path $CampaignFile)) { continue }
 
-        $currentModified = (Get-Item $CampaignFile).LastWriteTimeUtc
-        if ($currentModified -gt $script:lastModified) {
-            Write-Log "db.xml changed ($(Get-Date $currentModified -Format 'HH:mm:ss')). Syncing..."
-            $script:lastModified = $currentModified
+            $currentModified = (Get-Item $CampaignFile).LastWriteTimeUtc
+            if ($currentModified -gt $script:lastModified) {
+                Write-Log "db.xml changed ($(Get-Date $currentModified -Format 'HH:mm:ss')). Syncing..."
+                $script:lastModified = $currentModified
 
-            # Brief pause to let FG finish writing
-            Start-Sleep -Seconds 1
+                # Brief pause to let FG finish writing
+                Start-Sleep -Seconds 1
 
-            Push-Characters
+                Push-Characters
+            }
+        }
+        catch {
+            Write-Log "Poll error (will retry next cycle): $_"
         }
     }
 }
