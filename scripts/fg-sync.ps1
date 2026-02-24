@@ -3,6 +3,17 @@
 # to Cloudflare KV when the file is modified.
 # Run this in the background during a session, or register it at login.
 
+# --- HIDE CONSOLE WINDOW ---
+# Hides the PowerShell window after a brief flash on startup.
+Add-Type -Name Window -Namespace Console -MemberDefinition '
+[DllImport("Kernel32.dll")]
+public static extern IntPtr GetConsoleWindow();
+[DllImport("user32.dll")]
+public static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);
+'
+$consolePtr = [Console.Window]::GetConsoleWindow()
+[Console.Window]::ShowWindow($consolePtr, 0) | Out-Null
+
 # --- CONFIGURATION ---
 # Campaign name — change this per campaign
 $CampaignName = "YOUR_CAMPAIGN_NAME"
@@ -422,9 +433,9 @@ function Backup-PlayerData {
             Set-Content -Path $hourlyFile -Value $json -Encoding UTF8
             Write-Log "Player-data hourly backup saved"
 
-            # Clean up backups older than 30 days
+            # Clean up backups older than 7 days
             Get-ChildItem $BackupDir -Filter "player-data-20*.json" |
-                Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
+                Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } |
                 Remove-Item -Force
         }
 
