@@ -53,7 +53,7 @@ dcc-party-tracker/
 
 Cloudflare Pages provides hosting with a URL like `https://<your-project-name>.pages.dev`. It also provides a serverless database (KV) where character data is stored.
 
-#### Step 1: Create a Cloudflare Account
+#### Step 1: Log in to your Cloudflare Account
 
 #### Step 2: Create a Pages Project
 1. After logging in, you should see the Cloudflare dashboard
