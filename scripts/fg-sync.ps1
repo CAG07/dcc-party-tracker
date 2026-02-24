@@ -430,7 +430,7 @@ if (Test-Path $CampaignFile) {
 $watcher = New-Object System.IO.FileSystemWatcher
 $watcher.Path = $CampaignDir
 $watcher.Filter = "db.xml"
-$watcher.NotifyFilter = [System.IO.NotifyFilters]::LastWrite
+$watcher.NotifyFilter = [System.IO.NotifyFilters]::LastWrite -bor [System.IO.NotifyFilters]::Size -bor [System.IO.NotifyFilters]::CreationTime -bor [System.IO.NotifyFilters]::FileName
 $watcher.EnableRaisingEvents = $true
 
 # Debounce timer — prevents multiple rapid fires from a single FG save
@@ -451,6 +451,7 @@ $action = {
 }
 
 Register-ObjectEvent $watcher Changed -Action $action | Out-Null
+Register-ObjectEvent $watcher Renamed -Action $action | Out-Null
 
 Write-Log "Watcher active. Waiting for db.xml changes..."
 Write-Log "Press Ctrl+C to stop."
