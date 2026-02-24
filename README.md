@@ -204,11 +204,10 @@ If you run more than one campaign (or different GMs in your group each run their
 
 For each additional campaign:
 
-1. Fork this repository again into a new GitHub repo (or create a new repo and upload the project files)
-2. Create a new Pages project in Cloudflare with a different name (e.g., `dcc-campaign-2`)
-3. Create a new KV namespace (e.g., `fg-campaign-2`) and bind it with variable name `FG_DATA`
-4. Redeploy the new project
-5. Run `run-setup.bat` again on the GM's PC and pick the new campaign + enter new site URL
+1. Create a new Pages project in Cloudflare with a different name (e.g., `skulls-of-chaos`)
+2. Create a new KV namespace (e.g., `fg-campaign-2`) and bind it with variable name `FG_DATA`
+3. Redeploy the new project
+4. Run `run-setup.bat` again on the GM's PC and pick the new campaign + enter new site URL
 
 Each sync script instance watches a different campaign folder and pushes to a different site. They can run simultaneously with no issues.
 
@@ -220,3 +219,4 @@ Each sync script instance watches a different campaign folder and pushes to a di
 
 - **Cost**: Everything used here is free. Cloudflare's free tier allows 100K reads/day and 1K writes/day
 - **Autosave**: Fantasy Grounds writes db.xml every ~5 minutes during a session, and on session close. The GM can also type `/save` in FG chat for an immediate save.
+- **Backups**: The fg-sync.ps1 script creates hourly backups of the player-data in your campaign backups folder. Backups older than 30 days are automatically deleted.
