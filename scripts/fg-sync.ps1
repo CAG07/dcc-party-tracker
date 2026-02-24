@@ -16,7 +16,7 @@ $CampaignDir = Join-Path $FGDataDir "campaigns\$CampaignName"
 $CampaignFile = Join-Path $CampaignDir "db.xml"
 
 # Your Cloudflare Pages site endpoint (writes to fg-characters KV key only)
-$Endpoint = "https://dcc-party-tracker.pages.dev/api/fg-characters"
+$Endpoint = "https://your-project-name.pages.dev/api/fg-characters"
 
 # Log file
 $LogFile = "$env:LOCALAPPDATA\fg-sync-$CampaignName.log"
@@ -362,10 +362,10 @@ function Push-Characters {
 
         $characters = @()
         foreach ($node in $charsheet.ChildNodes) {
-            if ($node.NodeType -eq "Element" -and $node.Name -match '^id-\d+') {
+            if ($node.NodeType -eq "Element" -and $node.LocalName -match '^id-\d+') {
                 $name = Get-CharacterName $node
-                Write-Log "  Found: $name ($($node.Name))"
-                $characters += Parse-Character $node $node.Name
+                Write-Log "  Found: $name ($($node.LocalName))"
+                $characters += Parse-Character $node $node.LocalName
             }
         }
 

@@ -50,7 +50,7 @@ Write-Host ""
 # --- Step 3: Get the Cloudflare Pages URL ---
 Write-Host "Enter your Cloudflare Pages site URL." -ForegroundColor Cyan
 Write-Host "This is the URL where the web app is hosted."
-Write-Host "Example: https://dcc-party-tracker.pages.dev"
+Write-Host "Example: https://your-project-name.pages.dev"
 Write-Host ""
 $SiteURL = Read-Host "Site URL"
 $SiteURL = $SiteURL.TrimEnd('/')
@@ -84,7 +84,7 @@ if (-not (Test-Path $SyncScript)) {
 
 $content = Get-Content $SyncScript -Raw
 $content = $content -replace '\$CampaignName = "YOUR_CAMPAIGN_NAME"', "`$CampaignName = `"$selectedCampaign`""
-$content = $content -replace '\$Endpoint = "https://dcc-party-tracker\.pages\.dev/api/fg-characters"', "`$Endpoint = `"$Endpoint`""
+$content = $content -replace '\$Endpoint = "https://your-project-name\.pages\.dev/api/fg-characters"', "`$Endpoint = `"$Endpoint`""
 Set-Content $SyncScript -Value $content -Encoding UTF8
 
 Write-Host "Updated fg-sync.ps1 with your settings." -ForegroundColor Green
@@ -113,7 +113,7 @@ if (Test-Path $DbFile) {
         [xml]$db = Get-Content $DbFile -Encoding UTF8
         $count = 0
         foreach ($node in $db.root.charsheet.ChildNodes) {
-            if ($node.Name -match '^id-\d+') {
+            if ($node.LocalName -match '^id-\d+') {
                 $name = $node.SelectSingleNode("name")
                 if ($name) {
                     Write-Host "  Found character: $($name.InnerText)" -ForegroundColor White
@@ -145,6 +145,14 @@ if ($install -eq 'y') {
 
     if (Test-Path $InstallScript) {
         & $InstallScript -CampaignName $selectedCampaign -ScriptPath $SyncScript
+        # Start the task immediately (don't wait for next login)
+        $TaskName = "FG-Sync-$selectedCampaign"
+        try {
+            Start-ScheduledTask -TaskName $TaskName
+            Write-Host "Background task started!" -ForegroundColor Green
+        } catch {
+            Write-Host "Task installed but could not auto-start. Start it manually in Task Scheduler." -ForegroundColor Yellow
+        }
     } else {
         Write-Host "install-fg-sync.ps1 not found. You can install it manually later." -ForegroundColor Yellow
     }

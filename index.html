@@ -418,6 +418,12 @@ if(playerDataRemote){Object.keys(playerDataRemote).forEach(k=>{if(k!=='portraits
 if(fgData){
 partyData.characters=fgData.characters||[];
 partyData.inactiveCharacters=fgData.inactiveCharacters||[];
+// Ensure all characters appear in characterOrder (new chars from FG won't be listed yet)
+if(!partyData.characterOrder)partyData.characterOrder={left:[],right:[]};
+if(!partyData.characterOrder.left)partyData.characterOrder.left=[];
+if(!partyData.characterOrder.right)partyData.characterOrder.right=[];
+const allOrdered=new Set([...partyData.characterOrder.left,...partyData.characterOrder.right]);
+partyData.characters.forEach(ch=>{if(!allOrdered.has(ch.id)){if(partyData.characterOrder.left.length<=partyData.characterOrder.right.length){partyData.characterOrder.left.push(ch.id);}else{partyData.characterOrder.right.push(ch.id);}}});
 // Apply portraits and familiars from player data onto characters
 const portraits=playerDataRemote?.portraits||{};
 const familiars=playerDataRemote?.familiars||{};
