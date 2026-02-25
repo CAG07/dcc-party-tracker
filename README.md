@@ -172,6 +172,10 @@ C:\Users\YourName\Documents\dcc-party-tracker\
 
 If you installed the background task in Step 3, the sync runs automatically whenever you log in to Windows. You don't need to start anything manually — just open Fantasy Grounds and play.
 
+To monitor live logs from the sync script, run this in PowerShell:
+
+```powershell
+Get-Content "$env:LOCALAPPDATA\fg-sync-YOUR_CAMPAIGN_NAME.log" -Tail 20 -Wait
 ---
 
 ### Part 4: Using the Web App

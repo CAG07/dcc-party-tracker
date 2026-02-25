@@ -3,16 +3,15 @@
 # to Cloudflare KV when the file is modified.
 # Run this in the background during a session, or register it at login.
 
-# --- HIDE CONSOLE WINDOW ---
-# Hides the PowerShell window after a brief flash on startup.
-Add-Type -Name Window -Namespace Console -MemberDefinition '
-[DllImport("Kernel32.dll")]
-public static extern IntPtr GetConsoleWindow();
-[DllImport("user32.dll")]
-public static extern bool ShowWindow(IntPtr hWnd, Int32 nCmdShow);
+# --- DETACH CONSOLE ---
+# Releases the console window entirely so the script runs headless.
+# The window closes, the script keeps running, and all output goes to the log file.
+# To monitor live: Get-Content "$env:LOCALAPPDATA\fg-sync-CAMPAIGN.log" -Tail 20 -Wait
+Add-Type -Name Console -Namespace Win32 -MemberDefinition '
+[DllImport("kernel32.dll")]
+public static extern bool FreeConsole();
 '
-$consolePtr = [Console.Window]::GetConsoleWindow()
-[Console.Window]::ShowWindow($consolePtr, 0) | Out-Null
+[Win32.Console]::FreeConsole() | Out-Null
 
 # --- CONFIGURATION ---
 # Campaign name — change this per campaign
@@ -49,7 +48,6 @@ function Write-Log {
     param([string]$Message)
     $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $line = "[$ts] $Message"
-    Write-Host $line
     Add-Content -Path $LogFile -Value $line
 }
 
