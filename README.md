@@ -200,12 +200,12 @@ Run `run-setup.bat` again and pick a different campaign. It will create a new ba
 
 ## Running Multiple Campaigns
 
-If you run more than one campaign (or different GMs in your group each run their own), create a **separate Cloudflare Pages project for each campaign**. This keeps everything isolated — different site, different KV storage, no conflicts.
+If you run more than one campaign, create a **separate Cloudflare Pages project for each campaign**. This keeps everything isolated — different site, different KV storage, no conflicts.
 
 For each additional campaign:
 
 1. Create a new Pages project in Cloudflare with a different name (e.g., `skulls-of-chaos`)
-2. Create a new KV namespace (e.g., `fg-campaign-2`) and bind it with variable name `FG_DATA`
+2. Create a new KV namespace (e.g., `skulls-of-chaos-data`) and bind it with variable name `FG_DATA`
 3. Redeploy the new project
 4. Run `run-setup.bat` again on the GM's PC and pick the new campaign + enter new site URL
 
