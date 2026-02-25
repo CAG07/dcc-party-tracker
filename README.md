@@ -170,7 +170,7 @@ C:\Users\YourName\Documents\dcc-party-tracker\
 3. The sync script should detect the save and push data within seconds
 4. Open your site URL in a browser — characters should appear!
 
-If you installed the background task in Step 3, the sync runs automatically whenever you log in to Windows. You don't need to start anything manually — just open Fantasy Grounds and play.
+If you installed the background task in Step 3, the sync runs automatically whenever you log in to Windows. You don't need to start anything manually — just open Fantasy Grounds and play. If you close the window the task will stop running. Check Task Scheduler if you want to confirm FG Sync is running and start it again if needed.
 
 ---
 
