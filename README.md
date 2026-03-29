@@ -139,26 +139,7 @@ If both work, the website is ready! If the second URL gives a different error, d
 
 ### Part 3: Set Up the Sync Script (GM's Windows PC)
 
-This part runs on whichever PC hosts the Fantasy Grounds campaign — that's the GM's computer. The script watches for changes to the campaign file and automatically pushes character data to the website.
-
-#### Step 1: Download the Scripts
-
-You need three files from this repository on your PC:
-
-1. Go to your fork on GitHub (`github.com/YOUR-USERNAME/dcc-party-tracker`)
-2. Click the green **Code** button → **Download ZIP**
-3. Open the downloaded ZIP and extract it somewhere on your PC
-4. Copy these files to a permanent location (they need to stay here):
-
-```
-C:\Users\YourName\Documents\fg-sync\
-├── setup.ps1                   ← from the project root
-├── scripts\
-│   ├── fg-sync.ps1             ← from the scripts folder
-│   └── install-fg-sync.ps1     ← from the scripts folder
-```
-
-> You don't need `index.html` or the `functions/` folder on your PC — those only matter on GitHub/Cloudflare. You just need `setup.ps1` and the `scripts/` folder.
+This part runs on the GM's computer. The script watches for changes to the campaign file and automatically pushes character data to the website.
 
 #### Step 1: Download the Scripts
 
@@ -308,4 +289,4 @@ One GitHub repo serves all campaigns. Bug fixes auto-deploy to every campaign si
 - **Autosave**: Fantasy Grounds writes db.xml every ~5 minutes during a session, and on session close. The GM can also type `/save` in FG chat for an immediate save.
 - **File Safety**: The sync script never writes to db.xml — it only reads. It cannot corrupt your campaign data.
 - **Merge Logic**: Player data (journals, quests, graveyard) uses union-merge, so multiple players can edit at the same time without overwriting each other's changes.
-- **Privacy**: Your site URL is technically public, but it's an obscure `.pages.dev` address that nobody will find unless you share it. For additional security, Cloudflare Access (free for up to 50 users) can restrict the site to specific email addresses.
+- **Privacy**: Your site URL is technically public, but it's an obscure `.pages.dev` address that will typically not be found unless you share it. For additional security, Cloudflare Access (free for up to 50 users) can restrict the site to specific email addresses.
