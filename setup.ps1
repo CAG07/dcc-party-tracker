@@ -131,9 +131,10 @@ if (Test-Path $DbFile) {
 Write-Host ""
 
 # --- Step 7: Offer to install background task ---
-Write-Host "Would you like to install the background sync task?" -ForegroundColor Cyan
-Write-Host "This runs fg-sync.ps1 automatically when you log in to Windows."
-Write-Host "It watches for changes to db.xml and pushes updates to the web app."
+Write-Host "Would you like to install the sync task?" -ForegroundColor Cyan
+Write-Host "This registers the sync script in Task Scheduler."
+Write-Host "Start it manually before a session — a console window shows sync activity."
+Write-Host "See the README for how to create a desktop shortcut."
 Write-Host ""
 $install = Read-Host "Install background task? (y/n)"
 
@@ -196,9 +197,12 @@ Write-Host "   Setup complete!                          " -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Cyan
-Write-Host "  1. Open your campaign in Fantasy Grounds"
-Write-Host "  2. Start the sync (or it starts at next login if you installed the task)"
+Write-Host "  1. Start the sync task (see README for desktop shortcut)"
+Write-Host "  2. Open Fantasy Grounds and load your campaign"
 Write-Host "  3. Open $SiteURL in your browser"
-Write-Host "  4. Characters should appear within ~5 minutes (or after /save)"
+Write-Host "  4. Characters should appear within ~5 minutes (or after /save in FG)"
+Write-Host ""
+Write-Host "Monitor logs:" -ForegroundColor Cyan
+Write-Host "  Get-Content `"$env:LOCALAPPDATA\fg-sync-$selectedCampaign.log`" -Tail 20 -Wait"
 Write-Host ""
 Read-Host "Press Enter to exit"
