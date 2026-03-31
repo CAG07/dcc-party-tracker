@@ -223,13 +223,7 @@ Create a one-click shortcut to start the sync silently:
 
 Replace `Tower of the Black Pearl` with your campaign folder name.
 
-### Option 2: PowerShell
-
-```powershell
-Start-ScheduledTask -TaskName "FG-Sync-Tower of the Black Pearl"
-```
-
-### Option 3: Task Scheduler UI
+### Option 2: Task Scheduler UI
 
 Open Task Scheduler (search it in the Start menu), find your task, right-click → **Run**.
 
