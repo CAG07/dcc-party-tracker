@@ -78,7 +78,7 @@ Cloudflare Pages is a free service that takes your code from GitHub and turns it
 #### Step 3: Configure the Build Settings
 1. You'll see a configuration page with several fields:
    - **Project name**: Choose a name for your campaign (e.g., `my-dcc-campaign`, `skulls-of-chaos`). This becomes your website URL, so keep it short and simple. **Do not** use `dcc-party-tracker` — that's the repo name, not your project name.
-   - **Production branch**: `main` (should be auto-selected)
+   - **Production branch**: `fg-sync` (this is the branch that auto-syncs character data from Fantasy Grounds)
    - **Framework preset**: None
    - **Build command**: **leave this completely blank**
    - **Build output directory**: **leave this completely blank** (or type `/`)
