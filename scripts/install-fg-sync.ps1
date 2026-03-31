@@ -1,6 +1,5 @@
 # install-fg-sync.ps1
 # Registers fg-sync.ps1 as a scheduled task (manual start).
-# Run this script once as Administrator.
 
 param(
     [string]$CampaignName = "YOUR_CAMPAIGN_NAME",
@@ -44,7 +43,7 @@ $action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
     -Argument "-ExecutionPolicy Bypass -NoProfile -File `"$ScriptPath`""
 
-# Settings: allow it to run indefinitely, don't stop after 3 days
+# Settings: allow it to run indefinitely
 $settings = New-ScheduledTaskSettingsSet `
     -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries `
