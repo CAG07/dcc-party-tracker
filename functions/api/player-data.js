@@ -9,12 +9,12 @@ export async function onRequestGet(context) {
 
   if (!data) {
     return new Response(JSON.stringify({}), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   }
 
   return new Response(JSON.stringify(data), {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
   });
 }
 
@@ -26,12 +26,12 @@ export async function onRequestPut(context) {
     await context.env.FG_DATA.put("player-data", body);
 
     return new Response(JSON.stringify({ success: true, timestamp: new Date().toISOString() }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: "Invalid JSON payload" }), {
       status: 400,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     });
   }
 }
