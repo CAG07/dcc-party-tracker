@@ -2,27 +2,19 @@
 
 A web app that displays your Dungeon Crawl Classics RPG party in a shared browser view.
 
-- **player-data**: Contains journals, graveyard, quests, notes, etc.
-- These two keys can never overwrite each other.
-
 ## What You Need
-
-- A **Windows PC** running Fantasy Grounds Unity (the GM's computer)
-- A **GitHub account** — this stores the website code
-- A **Cloudflare account** — this hosts the website so everyone can access it
+**Cloudflare account** — this hosts the website so everyone can access it
 
 ## Project Files
 
 ```
 dcc-party-tracker/
-├── index.html                  ← The web app (this is what players see)
+├── index.html     
 ├── functions/
 │   └── api/
 │         └── player-data.js      ← API: player-editable data (journals, etc.)
 └── README.md
 ```
-
----
 
 ## Setup Guide
 
@@ -58,10 +50,10 @@ Cloudflare Pages is a free service that takes your code from GitHub and turns it
 #### Step 3: Configure the Build Settings
 1. You'll see a configuration page with several fields:
    - **Project name**: Choose a name for your campaign (e.g., `my-dcc-campaign`, `skulls-of-chaos`). This becomes your website URL, so keep it short and simple. **Do not** use `dcc-party-tracker` — that's the repo name, not your project name.
-   - **Production branch**: `main` (this is the default, leave it as is)
+   - **Production branch**: `main` (this is the default, leave it as is or change to a different branch if you want to deploy another version or different campaign)
    - **Framework preset**: None
-   - **Build command**: **leave this completely blank**
-   - **Build output directory**: **leave this completely blank** (or type `/`)
+   - **Build command**: **leave this blank**
+   - **Build output directory**: **leave this blank**
 2. Click **Save and Deploy**
 3. Wait for the deployment — it usually takes under a minute
 4. When it says "Success", your site is live!
@@ -74,7 +66,7 @@ KV (Key-Value) is a small cloud database that Cloudflare provides for free. This
 1. In the Cloudflare dashboard left sidebar, click **Workers & Pages**
 2. In the left sidebar under Workers & Pages, click **KV**
 3. Click **Create a namespace**
-4. For the name, use your campaign/project name (e.g., `FG_DATA_skulls-of-chaos`). This is just a label so you can tell your namespaces apart in the dashboard — it can be anything.
+4. For the name, use your campaign/project name (e.g., `skulls-of-chaos-data`). This is just a label so you can tell your namespaces apart in the dashboard — it can be anything.
 5. Click **Add**
 
 #### Step 5: Connect KV to Your Website
