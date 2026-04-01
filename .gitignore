@@ -1,10 +1,3 @@
-# Sync logs and state files
-*.log
-fg-sync-state-*.txt
-
-# Auto-generated launcher (created by install-fg-sync.ps1)
-fg-sync-launcher.vbs
-
 # OS files
 Thumbs.db
 .DS_Store
