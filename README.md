@@ -3,7 +3,8 @@
 A web app that displays your Dungeon Crawl Classics RPG party in a shared browser view.
 
 ## What You Need
-**Cloudflare account** — this hosts the website so everyone can access it
+**Cloudflare account**
+Hosting provider
 
 ## Project Files
 
