@@ -49,7 +49,7 @@ Cloudflare Pages is a free service that takes your code from GitHub and turns it
 
 #### Step 3: Configure the Build Settings
 1. You'll see a configuration page with several fields:
-   - **Project name**: Choose a name for your campaign (e.g., `my-dcc-campaign`, `skulls-of-chaos`). This becomes your website URL, so keep it short and simple. **Do not** use `dcc-party-tracker` — that's the repo name, not your project name.
+   - **Project name**: Choose a name for your campaign (e.g., `my-dcc-campaign`, `skulls-of-chaos`). This becomes your website URL, so keep it short and simple.
    - **Production branch**: `main` (this is the default, leave it as is or change to a different branch if you want to deploy another version or different campaign)
    - **Framework preset**: None
    - **Build command**: **leave this blank**
