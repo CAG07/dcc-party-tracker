@@ -1,0 +1,26 @@
+name: Deploy DO Worker
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "worker/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy Durable Object Worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Deploy Worker
+        working-directory: worker
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
