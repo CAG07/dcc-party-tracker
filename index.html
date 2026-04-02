@@ -520,16 +520,15 @@ function clearAllData(){if(!confirm('Clear characters, companions, assets, quest
 fetch('/api/player-data',{method:'PUT',body:JSON.stringify(partyData),headers:{'Content-Type':'application/json'}}).catch(()=>{});
 loadData();renderAll();}
 async function loadData(){
-let remote=null;
-try{const resp=await fetch('/api/player-data');if(resp.ok){const data=await resp.json();if(data&&Object.keys(data).length>0)remote=data;}}catch(e){console.warn('KV fetch failed, using localStorage');}
-if(remote){partyData={...partyData,...remote};try{localStorage.setItem('dccPartyData',JSON.stringify(partyData));}catch(e){}console.log('Loaded from KV');}else{const saved=localStorage.getItem('dccPartyData');if(saved){try{const loaded=JSON.parse(saved);partyData={...partyData,...loaded};}catch(e){console.warn('Corrupted localStorage, starting fresh.',e);localStorage.removeItem('dccPartyData');}}console.log('Loaded from localStorage');}
-renderFields();renderRations();renderTracker();}
+const saved=localStorage.getItem('dccPartyData');if(saved){try{const loaded=JSON.parse(saved);partyData={...partyData,...loaded};}catch(e){console.warn('Corrupted localStorage, starting fresh.',e);localStorage.removeItem('dccPartyData');}}
+renderFields();renderRations();renderTracker();
+try{const resp=await fetch('/api/player-data');if(resp.ok){const remote=await resp.json();if(remote&&Object.keys(remote).length>0){const remoteJson=JSON.stringify(remote);const localJson=JSON.stringify(partyData);if(remoteJson!==localJson){partyData={...partyData,...remote};try{localStorage.setItem('dccPartyData',JSON.stringify(partyData));}catch(e){}renderAll();console.log('Updated from DO');}}}}catch(e){console.warn('DO fetch failed, using localStorage');}}
 function cycleMoon(type){if(type==='silver'){partyData.silverMoonPhase=(partyData.silverMoonPhase+1)%8;}else{partyData.weirdMoonPhase=(partyData.weirdMoonPhase+1)%8;}updateMoonDisplays();saveData();}
 function updateMoonDisplays(){document.getElementById('silverMoonSymbol').textContent=MOON_PHASES[partyData.silverMoonPhase||0];document.getElementById('weirdMoonSymbol').textContent=MOON_PHASES[partyData.weirdMoonPhase||0];}
 function importXML(){document.getElementById('xmlFileInput').click();}
 function exportData(){saveData();const blob=new Blob([JSON.stringify(partyData,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(partyData.partyName||'party').replace(/[^a-z0-9]/gi,'_')+'_save.json';a.click();}
 function importData(){document.getElementById('jsonFileInput').click();}
-function handleJSONImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){try{const imported=JSON.parse(ev.target.result);Object.keys(imported).forEach(k=>{if(!isEmpty(imported[k]))partyData[k]=imported[k];});try{localStorage.setItem('dccPartyData',JSON.stringify(partyData));}catch(qe){showStorageWarning();}
+function handleJSONImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){try{const imported=JSON.parse(ev.target.result);Object.keys(imported).forEach(k=>{if(isEmpty(imported[k]))return;if(isPlainObj(imported[k])&&isPlainObj(partyData[k])){Object.keys(imported[k]).forEach(sk=>{if(!isEmpty(imported[k][sk]))partyData[k][sk]=imported[k][sk];});}else{partyData[k]=imported[k];}});try{localStorage.setItem('dccPartyData',JSON.stringify(partyData));}catch(qe){showStorageWarning();}
 try{await fetch('/api/player-data',{method:'PUT',body:JSON.stringify(partyData),headers:{'Content-Type':'application/json'}});console.log('Pushed to KV');}catch(err){console.warn('KV push failed, saved locally only');}
 loadData();renderAll();alert('Loaded!');}catch(err){alert('Error: '+err.message);}};reader.readAsText(file);e.target.value='';}
 function handleXMLImport(e){Array.from(e.target.files).forEach(file=>{const reader=new FileReader();reader.onload=function(ev){parseCharacterXML(ev.target.result);};reader.readAsText(file);});e.target.value='';}
@@ -539,6 +538,7 @@ function getDirectChildText(p,t){for(let c of p.children){if(c.tagName.toLowerCa
 function getXMLNumber(p,s){const t=getXMLText(p,s);return t?parseInt(t)||0:0;}
 function esc(s){if(s===null||s===undefined)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function isEmpty(v){return v===null||v===undefined||(typeof v==='string'&&v==='')||(Array.isArray(v)&&v.length===0)||(typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===0);}
+function isPlainObj(v){return v&&typeof v==='object'&&!Array.isArray(v);}
 function parseAbility(c,n){const a=c.querySelector('abilities > '+n);if(!a)return{score:10,bonus:0,tempDamage:0,permDamage:0,spellburn:0,total:10};return{score:getXMLNumber(a,'score'),bonus:getXMLNumber(a,'bonus'),tempDamage:getXMLNumber(a,'damage > temporary'),permDamage:getXMLNumber(a,'damage > permanent'),spellburn:getXMLNumber(a,'spellburn > old')+getXMLNumber(a,'spellburn > new'),total:getXMLNumber(a,'total')};}
 function parseClasses(c){const cls=[];c.querySelectorAll('classes > *').forEach(cl=>{const n=getXMLText(cl,'name');const l=getXMLNumber(cl,'level');if(n&&l>0)cls.push({name:n,level:l});});return cls;}
 function parseCoins(c){const coins={};c.querySelectorAll('coins > *').forEach(coin=>{const n=getXMLText(coin,'name');const a=getXMLNumber(coin,'amount');if(n)coins[n]=a;});return coins;}
