@@ -531,7 +531,7 @@ function updateMoonDisplays(){document.getElementById('silverMoonSymbol').textCo
 function importXML(){document.getElementById('xmlFileInput').click();}
 function exportData(){saveData();const blob=new Blob([JSON.stringify(partyData,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(partyData.partyName||'party').replace(/[^a-z0-9]/gi,'_')+'_save.json';a.click();}
 function importData(){document.getElementById('jsonFileInput').click();}
-function handleJSONImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){try{partyData=JSON.parse(ev.target.result);try{localStorage.setItem('dccPartyData',JSON.stringify(partyData));}catch(qe){showStorageWarning();}
+function handleJSONImport(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=async function(ev){try{partyData={...partyData,...JSON.parse(ev.target.result)};try{localStorage.setItem('dccPartyData',JSON.stringify(partyData));}catch(qe){showStorageWarning();}
 try{await fetch('/api/player-data',{method:'PUT',body:JSON.stringify(partyData),headers:{'Content-Type':'application/json'}});console.log('Pushed to KV');}catch(err){console.warn('KV push failed, saved locally only');}
 loadData();renderAll();alert('Loaded!');}catch(err){alert('Error: '+err.message);}};reader.readAsText(file);e.target.value='';}
 function handleXMLImport(e){Array.from(e.target.files).forEach(file=>{const reader=new FileReader();reader.onload=function(ev){parseCharacterXML(ev.target.result);};reader.readAsText(file);});e.target.value='';}

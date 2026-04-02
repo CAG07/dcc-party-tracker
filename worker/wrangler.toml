@@ -1,0 +1,14 @@
+name = "dcc-party-state"
+main = "src/index.js"
+compatibility_date = "2025-09-27"
+
+# Durable Object binding
+[durable_objects]
+bindings = [
+  { name = "PARTY_STATE", class_name = "PartyState" }
+]
+
+# Migration: creates the PartyState class with SQLite
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PartyState"]
