@@ -5,17 +5,6 @@ A web app for tracking your Dungeon Crawl Classics RPG party — characters, mar
 ## What You Need
 A **Cloudflare account** to provide hosting and storage
 
-## Project Files
-
-```
-dcc-party-tracker/
-├── index.html     
-├── functions/
-│   └── api/
-│         └── player-data.js      ← API: player-editable data (journals, etc.)
-└── README.md
-```
-
 ## Setup Guide
 
 ### Part 1: GitHub Fork
