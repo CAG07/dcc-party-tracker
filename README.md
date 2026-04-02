@@ -1,6 +1,6 @@
 # DCC Party Viewer
 
-A web app that displays your Dungeon Crawl Classics RPG party in a shared browser view.
+A web app for tracking your Dungeon Crawl Classics RPG party — characters, marching order, quests, journals, and more.
 
 ## What You Need
 A **Cloudflare account** to provide hosting and storage
