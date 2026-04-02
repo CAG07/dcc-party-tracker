@@ -1,5 +1,5 @@
 // Pages Function: /api/player-data
-// Uses Durable Objects
+// Routes all requests (HTTP GET, PUT, and WebSocket upgrades) to the PartyState Durable Object
 // Binding: PARTY_STATE (Durable Object namespace, configured in Pages dashboard)
 
 // --- KV IMPLEMENTATION (commented out, kept for reference) ---
@@ -33,24 +33,15 @@
 //   }
 // }
 
-// --- DURABLE OBJECTS IMPLEMENTATION ---
+// --- DURABLE OBJECTS IMPLEMENTATION (with WebSocket support) ---
 
 function getStub(env) {
   const id = env.PARTY_STATE.idFromName("default");
   return env.PARTY_STATE.get(id);
 }
 
-export async function onRequestGet(context) {
+// Catch-all: forwards GET, PUT, and WebSocket upgrades to the DO
+export async function onRequest(context) {
   const stub = getStub(context.env);
-  return stub.fetch(new Request("https://do/data", { method: "GET" }));
-}
-
-export async function onRequestPut(context) {
-  const body = await context.request.text();
-  const stub = getStub(context.env);
-  return stub.fetch(new Request("https://do/data", {
-    method: "PUT",
-    body: body,
-    headers: { "Content-Type": "application/json" },
-  }));
+  return stub.fetch(context.request);
 }
