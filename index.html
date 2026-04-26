@@ -489,9 +489,9 @@
     <div class="wiki-modal-overlay" id="wikiModal"><div class="wiki-modal"><div class="wiki-modal-header"><h3 id="wikiModalTitle">Wiki Entry</h3><button class="modal-close" onclick="closeWikiModal()">X</button></div><div class="wiki-modal-body" id="wikiModalBody"></div></div></div>
     <input type="file" class="hidden-input" id="xmlFileInput" accept=".xml" multiple onchange="handleXMLImport(event)">
     <input type="file" class="hidden-input" id="jsonFileInput" accept=".json" onchange="handleJSONImport(event)">
-    <input type="file" class="hidden-input" id="adventureArtInput" accept="image/*" onchange="handleAdventureArtUpload(event)">
-    <input type="file" class="hidden-input" id="portraitInput" accept="image/*" onchange="handlePortraitUpload(event)">
-    <input type="file" class="hidden-input" id="familiarPortraitInput" accept="image/*" onchange="handleFamiliarPortraitUpload(event)">
+    <input type="file" class="hidden-input" id="adventureArtInput" accept=".jpg,.jpeg,.png" onchange="handleAdventureArtUpload(event)">
+    <input type="file" class="hidden-input" id="portraitInput" accept=".jpg,.jpeg,.png" onchange="handlePortraitUpload(event)">
+    <input type="file" class="hidden-input" id="familiarPortraitInput" accept=".jpg,.jpeg,.png" onchange="handleFamiliarPortraitUpload(event)">
     
     <input type="file" class="hidden-input" id="classFileInput" accept=".pdf,.txt,.md,.doc,.docx,.rtf,.htm,.html" onchange="handleClassFileUpload(event)">
     
@@ -539,6 +539,71 @@ function getXMLNumber(p,s){const t=getXMLText(p,s);return t?parseInt(t)||0:0;}
 function esc(s){if(s===null||s===undefined)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function isEmpty(v){return v===null||v===undefined||(typeof v==='string'&&v==='')||(Array.isArray(v)&&v.length===0)||(typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===0);}
 function isPlainObj(v){return v&&typeof v==='object'&&!Array.isArray(v);}
+
+// ==================== IMAGE UPLOAD ====================
+// Validates that an uploaded file is JPEG or PNG. Shows alert and returns false if not.
+function validateImageFile(file){
+  const okTypes=['image/jpeg','image/jpg','image/png'];
+  if(!okTypes.includes(file.type)){
+    alert('Please upload a JPG or PNG image.');
+    return false;
+  }
+  return true;
+}
+// Returns the byte size of a base64 data URL (accounts for padding).
+function base64ByteSize(dataUrl){
+  const base64=dataUrl.split(',')[1]||'';
+  const padding=(base64.match(/=/g)||[]).length;
+  return Math.floor((base64.length*3)/4)-padding;
+}
+// Resizes an image to fit within maxDim on its longest side, encoded as JPEG.
+// For portraits (fixedSize=true), center-crops square to exactly maxDim x maxDim.
+// If maxBytes is set, iteratively reduces JPEG quality until it fits, or rejects at qualityFloor.
+// Returns a Promise resolving to the base64 data URL, or rejects with an Error.
+function resizeImage(file,maxDim,quality,maxBytes,qualityFloor,fixedSize){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const img=new Image();
+      img.onload=function(){
+        const canvas=document.createElement('canvas');
+        let w,h,sx=0,sy=0,sw=img.width,sh=img.height;
+        if(fixedSize){
+          const side=Math.min(img.width,img.height);
+          sx=Math.floor((img.width-side)/2);
+          sy=Math.floor((img.height-side)/2);
+          sw=side;sh=side;
+          w=maxDim;h=maxDim;
+        }else{
+          const scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+          w=Math.round(img.width*scale);
+          h=Math.round(img.height*scale);
+        }
+        canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,sx,sy,sw,sh,0,0,w,h);
+        let q=quality;
+        let dataUrl=canvas.toDataURL('image/jpeg',q);
+        if(maxBytes){
+          while(base64ByteSize(dataUrl)>maxBytes&&q>=qualityFloor+0.05){
+            q=Math.round((q-0.05)*100)/100;
+            dataUrl=canvas.toDataURL('image/jpeg',q);
+          }
+          if(base64ByteSize(dataUrl)>maxBytes){
+            reject(new Error('TOO_LARGE'));
+            return;
+          }
+        }
+        console.log('Resized image: '+w+'x'+h+' @ quality '+q+' = '+Math.round(base64ByteSize(dataUrl)/1024)+' KB (original: '+Math.round(file.size/1024)+' KB)');
+        resolve(dataUrl);
+      };
+      img.onerror=()=>reject(new Error('LOAD_FAILED'));
+      img.src=ev.target.result;
+    };
+    reader.onerror=()=>reject(new Error('READ_FAILED'));
+    reader.readAsDataURL(file);
+  });
+}
 function parseAbility(c,n){const a=c.querySelector('abilities > '+n);if(!a)return{score:10,bonus:0,tempDamage:0,permDamage:0,spellburn:0,total:10};return{score:getXMLNumber(a,'score'),bonus:getXMLNumber(a,'bonus'),tempDamage:getXMLNumber(a,'damage > temporary'),permDamage:getXMLNumber(a,'damage > permanent'),spellburn:getXMLNumber(a,'spellburn > old')+getXMLNumber(a,'spellburn > new'),total:getXMLNumber(a,'total')};}
 function parseClasses(c){const cls=[];c.querySelectorAll('classes > *').forEach(cl=>{const n=getXMLText(cl,'name');const l=getXMLNumber(cl,'level');if(n&&l>0)cls.push({name:n,level:l});});return cls;}
 function parseCoins(c){const coins={};c.querySelectorAll('coins > *').forEach(coin=>{const n=getXMLText(coin,'name');const a=getXMLNumber(coin,'amount');if(n)coins[n]=a;});return coins;}
@@ -576,17 +641,17 @@ function renderFeaturesTab(ch){if(!ch.features||ch.features.length===0)return'<p
 function renderNotesTab(ch,id,isInactive){return `<h4 class="section-subheader">Appearance</h4><p>${ch.appearance?ch.appearance.replace(/\\n/g,'<br>'):'-'}</p><h4 class="section-subheader">Languages</h4><p>${ch.languages.length>0?ch.languages.join(', '):'-'}</p><h4 class="section-subheader">Notes</h4><p>${ch.notes?ch.notes.replace(/\\n/g,'<br>'):'-'}</p>${ch.houseRules?.wounds?`<h4 class="section-subheader">Wounds</h4><p>${ch.houseRules.wounds.replace(/\\n/g,'<br>')}</p>`:''}<h4 class="section-subheader">Corruption</h4><textarea class="notes-textarea" id="corruptionNotes-${id}" style="min-height:80px;" placeholder="Track corruption effects..." onchange="updateCorruption('${id}',this.value,${isInactive})">${ch.corruption||''}</textarea>`;}
 function renderTrackingTab(ch){const hr=ch.houseRules||{};return `<p style="font-style:italic;margin-bottom:12px;">Custom class tracking.</p><div class="class-tracking"><div class="tracking-item"><label>Tidal Die</label><input value="${hr.tidalDie||''}" readonly></div><div class="tracking-item"><label>Petrification</label><input value="${hr.petrification||0}" readonly></div><div class="tracking-item"><label>Lucidity</label><input value="${hr.lucidity||0}" readonly></div><div class="tracking-item"><label>Focus Die</label><input value="${hr.focusDie||''}" readonly></div><div class="tracking-item"><label>Focus Gem</label><input value="${hr.focusGem||''}" readonly></div><div class="tracking-item"><label>Shaping Die</label><input value="${hr.shapingDie||''}" readonly></div></div>${hr.notes?`<h4 class="section-subheader" style="margin-top:15px;">Class Notes</h4><p>${hr.notes.replace(/\n/g,'<br>')}</p>`:''}`;}
 function renderFamiliarTab(ch,id,isInactive){const f=ch.familiar||{};const hasFam=ch.familiar&&(f.name||f.statblock||f.portrait);return `<h4 class="section-subheader">Familiar / Pet</h4><p style="font-style:italic;margin-bottom:12px;">Click portrait to upload. Edit stat block below.</p><div style="display:grid;grid-template-columns:90px 1fr;gap:12px;"><div><div class="char-sheet-portrait" style="width:90px;height:90px;cursor:pointer;" onclick="uploadFamiliarPortrait('${id}',${isInactive})">${f.portrait?`<img src="${f.portrait}">`:'<div class="portrait-placeholder" style="font-size:1.8em;">🐾</div>'}</div>${hasFam?`<button class="btn" style="width:90px;margin-top:6px;color:var(--ink-red);border-color:var(--ink-red);font-size:0.6em;line-height:1.1;padding:4px 2px;" onclick="memorializeFamiliar('${id}',${isInactive})" title="Move familiar to graveyard">Memorialize<br>Familiar (RIP)</button>`:''}</div><div><div class="tracking-item" style="margin-bottom:8px;"><label>Name</label><input type="text" id="familiarName-${id}" value="${f.name||''}" onchange="updateFamiliar('${id}','name',this.value,${isInactive})"></div><div class="tracking-item"><label>Stat Block</label><textarea class="notes-textarea" id="familiarStats-${id}" style="min-height:100px;" placeholder="Init +1; Atk bite +2 melee (1d4); AC 12; HD 1d6; hp 4; MV 30'; Act 1d20; SV Fort +1, Ref +3, Will +0; AL N." onchange="updateFamiliar('${id}','statblock',this.value,${isInactive})">${f.statblock||''}</textarea></div></div></div>`;}
-function memorializeFamiliar(id,isInactive){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch||!ch.familiar)return;const famName=ch.familiar.name||'Unnamed Familiar';if(!confirm('Memorialize '+famName+'? This cannot be easily undone.'))return;const cause=prompt(famName+' has fallen! Cause of death:','Slain in battle');if(cause===null)return;if(!partyData.graveyard)partyData.graveyard=[];partyData.graveyard.push({name:famName,className:'Familiar',level:ch.level||'—',cause:cause||'Unknown'});ch.familiar=null;saveData();renderParty();renderInactive();renderGraveyard();closeCharacterModal();}
+function memorializeFamiliar(id,isInactive){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch||!ch.familiar)return;const famName=ch.familiar.name||'Unnamed Familiar';const cause=prompt(famName+' has fallen! Cause of death:','Slain in battle');if(cause===null)return;if(!partyData.graveyard)partyData.graveyard=[];partyData.graveyard.push({name:famName,className:'Familiar',level:ch.level||'—',cause:cause||'Unknown'});ch.familiar=null;saveData();renderParty();renderInactive();renderGraveyard();closeCharacterModal();}
 function updateFamiliar(id,field,val,isInactive){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch)return;if(!ch.familiar)ch.familiar={};ch.familiar[field]=val;saveData();renderParty();}
 function updateCorruption(id,val,isInactive){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch)return;ch.corruption=val;saveData();}
 function openFamiliarModal(id,isInactive){const list=isInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===id);if(!ch||!ch.familiar)return;const f=ch.familiar;document.getElementById('familiarModalName').textContent=f.name||'Familiar';document.getElementById('familiarModalBody').innerHTML=`<div style="display:grid;grid-template-columns:100px 1fr;gap:12px;"><div class="char-sheet-portrait" style="width:100px;height:100px;">${f.portrait?`<img src="${f.portrait}">`:'<div class="portrait-placeholder" style="font-size:2.5em;">🐾</div>'}</div><div style="font-family:'Crimson Text',serif;line-height:1.5;padding:10px;background:var(--parchment-bg);border:1px solid var(--border-brown);"><strong style="color:var(--ink-red);">${f.name||'Familiar'}:</strong> ${f.statblock||'No stats.'}</div></div>`;document.getElementById('familiarModal').classList.add('active');}
 function closeFamiliarModal(){document.getElementById('familiarModal').classList.remove('active');}
 function uploadPortrait(id,isInactive=false){currentPortraitCharId=id;window.currentPortraitIsInactive=isInactive;document.getElementById('portraitInput').click();}
-function handlePortraitUpload(e){const file=e.target.files[0];if(!file||!currentPortraitCharId)return;const reader=new FileReader();reader.onload=function(ev){const list=window.currentPortraitIsInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===currentPortraitCharId);if(ch){ch.portrait=ev.target.result;saveData();renderParty();renderInactive();if(document.getElementById('characterModal').classList.contains('active')){openCharacterModal(currentPortraitCharId,window.currentPortraitIsInactive);}}};reader.readAsDataURL(file);e.target.value='';}
+function handlePortraitUpload(e){const file=e.target.files[0];if(!file||!currentPortraitCharId)return;if(!validateImageFile(file)){e.target.value='';return;}resizeImage(file,100,0.85,null,null,true).then(dataUrl=>{const list=window.currentPortraitIsInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===currentPortraitCharId);if(ch){ch.portrait=dataUrl;saveData();renderParty();renderInactive();if(document.getElementById('characterModal').classList.contains('active')){openCharacterModal(currentPortraitCharId,window.currentPortraitIsInactive);}}}).catch(err=>{alert('Could not process this image. Try a different JPG or PNG file.');console.warn('Portrait resize failed:',err);});e.target.value='';}
 function uploadFamiliarPortrait(id,isInactive){currentFamiliarCharId=id;window.currentFamiliarIsInactive=isInactive;document.getElementById('familiarPortraitInput').click();}
-function handleFamiliarPortraitUpload(e){const file=e.target.files[0];if(!file||!currentFamiliarCharId)return;const reader=new FileReader();reader.onload=function(ev){const list=window.currentFamiliarIsInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===currentFamiliarCharId);if(ch){if(!ch.familiar)ch.familiar={};ch.familiar.portrait=ev.target.result;saveData();renderParty();renderInactive();if(document.getElementById('characterModal').classList.contains('active')){openCharacterModal(currentFamiliarCharId,window.currentFamiliarIsInactive);}}};reader.readAsDataURL(file);e.target.value='';}
+function handleFamiliarPortraitUpload(e){const file=e.target.files[0];if(!file||!currentFamiliarCharId)return;if(!validateImageFile(file)){e.target.value='';return;}resizeImage(file,100,0.85,null,null,true).then(dataUrl=>{const list=window.currentFamiliarIsInactive?partyData.inactiveCharacters:partyData.characters;const ch=list.find(c=>c.id===currentFamiliarCharId);if(ch){if(!ch.familiar)ch.familiar={};ch.familiar.portrait=dataUrl;saveData();renderParty();renderInactive();if(document.getElementById('characterModal').classList.contains('active')){openCharacterModal(currentFamiliarCharId,window.currentFamiliarIsInactive);}}}).catch(err=>{alert('Could not process this image. Try a different JPG or PNG file.');console.warn('Familiar portrait resize failed:',err);});e.target.value='';}
 function uploadAdventureArt(){document.getElementById('adventureArtInput').click();}
-function handleAdventureArtUpload(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=function(ev){partyData.adventureArt=ev.target.result;document.getElementById('adventureArtImage').src=ev.target.result;document.getElementById('adventureArtImage').style.display='block';document.getElementById('adventureArtPlaceholder').style.display='none';saveData();};reader.readAsDataURL(file);e.target.value='';}
+function handleAdventureArtUpload(e){const file=e.target.files[0];if(!file)return;if(!validateImageFile(file)){e.target.value='';return;}resizeImage(file,1000,0.85,300*1024,0.4,false).then(dataUrl=>{partyData.adventureArt=dataUrl;document.getElementById('adventureArtImage').src=dataUrl;document.getElementById('adventureArtImage').style.display='block';document.getElementById('adventureArtPlaceholder').style.display='none';saveData();}).catch(err=>{if(err.message==='TOO_LARGE'){alert('This image couldn\'t be compressed below 300 KB. Try using a smaller or less detailed image.');}else{alert('Could not process this image. Try a different JPG or PNG file.');console.warn('Adventure art resize failed:',err);}});e.target.value='';}
 function allowDrop(e){e.preventDefault();}
 function dragEnter(e){e.preventDefault();e.currentTarget.classList.add('drag-over');}
 function dragLeave(e){e.currentTarget.classList.remove('drag-over');}
